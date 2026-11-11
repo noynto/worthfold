@@ -142,7 +142,7 @@ Déclarés avec `@utility` dans `app.css`, à utiliser tels quels :
 | `btn-tonal` | Bouton tonal | Action fréquente mais secondaire (valoriser un actif) |
 | `btn-outlined-error` | Bouton à contour, erreur | Action destructive |
 | `btn-text-error` | Bouton texte, erreur | Action destructive secondaire, répétée dans une liste (supprimer une valorisation) |
-| `field` | Champ « outlined » | Champs texte, dates et listes déroulantes |
+| `field` | Champ « outlined » | Champs texte, dates et listes déroulantes. Une liste (`select.field`) perd l'apparence du système : flèche M3 dessinée aux couleurs du thème, options en `surface-container` et option choisie en `secondary-container`. Là où le navigateur le permet (`appearance: base-select`), la liste ouverte devient un menu M3 (coins md, élévation 2) ; sinon (Firefox) elle reste native, aux couleurs du thème |
 | `field-label` | Libellé de champ | Enveloppe un champ et son libellé |
 | `state-layer` | Couche d'état | Tout élément cliquable sans composant dédié |
 | `snackbar` | Snackbar | Confirmation d'une action, qui disparaît seule (voir [UX](ux.md), règle 2) |
