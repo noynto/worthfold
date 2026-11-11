@@ -9,7 +9,7 @@ const THOUSANDS: char = '\u{202F}';
 /// Espace insécable (U+00A0) : entre le montant et son symbole, pour ne jamais les couper.
 const BEFORE_SYMBOL: char = '\u{00A0}';
 
-/// `12345.6 EUR` → `12 345,60 €` ; `-1500 USD` → `−1 500,00 $`.
+/// `12345.6 EUR` → `12 345,60 €` ; `-1500 EUR` → `−1 500,00 €`.
 pub fn money(value: &Money) -> String {
     format!(
         "{}{BEFORE_SYMBOL}{}",
@@ -83,8 +83,6 @@ pub fn count(n: usize, singular: &str, plural: &str) -> String {
 pub fn symbol(currency: Currency) -> &'static str {
     match currency {
         Currency::Eur => "€",
-        Currency::Usd => "$",
-        Currency::Chf => "CHF",
     }
 }
 
@@ -144,18 +142,6 @@ mod tests {
         assert_eq!(
             count(3, "sa valorisation", "ses valorisations"),
             "ses 3 valorisations"
-        );
-    }
-
-    #[test]
-    fn place_le_symbole_de_chaque_devise_apres_le_montant() {
-        assert_eq!(
-            money(&Money::new(Decimal::from(42), Currency::Usd)),
-            "42,00\u{a0}$"
-        );
-        assert_eq!(
-            money(&Money::new(Decimal::from(42), Currency::Chf)),
-            "42,00\u{a0}CHF"
         );
     }
 }

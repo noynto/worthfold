@@ -76,9 +76,9 @@ mod tests {
     async fn enregistre_une_valorisation_dans_la_devise_de_l_actif() {
         let asset = Asset {
             id: "a".into(),
-            name: "Compte US".into(),
+            name: "Compte courant".into(),
             kind: AssetKind::BankAccount,
-            currency: Currency::Usd,
+            currency: Currency::Eur,
         };
         let valuations = Arc::new(InMemoryValuations::default());
         let use_case = RecordValuation {
@@ -99,7 +99,7 @@ mod tests {
 
         assert_eq!(
             output.valuation.value,
-            Money::new(Decimal::from(42), Currency::Usd)
+            Money::new(Decimal::from(42), Currency::Eur)
         );
         assert_eq!(valuations.read_all().await.unwrap().len(), 1);
     }

@@ -41,28 +41,32 @@ mod tests {
     use valuation::Valuation;
 
     #[tokio::test]
-    async fn refuse_un_historique_qui_melange_les_devises() {
-        let day = NaiveDate::from_ymd_opt(2026, 11, 9).unwrap();
+    async fn prolonge_la_courbe_jusqu_a_la_date_demandee() {
+        let day = |d| NaiveDate::from_ymd_opt(2026, 11, d).unwrap();
         let use_case = ReadNetWorthHistory {
             asset_provider: Arc::new(InMemoryAssets::with([Asset {
-                id: "us".into(),
-                name: "US".into(),
-                kind: AssetKind::BankAccount,
-                currency: Currency::Usd,
+                id: "a".into(),
+                name: "Livret".into(),
+                kind: AssetKind::SavingsBook,
+                currency: Currency::Eur,
             }])),
             valuation_provider: Arc::new(InMemoryValuations::with([Valuation {
                 id: shared::ValuationId::generate(),
-                asset_id: "us".into(),
-                value: Money::new(Decimal::ONE, Currency::Usd),
-                valued_on: day,
+                asset_id: "a".into(),
+                value: Money::new(Decimal::from(100), Currency::Eur),
+                valued_on: day(1),
             }])),
         };
-        let result = use_case
+
+        let output = use_case
             .handle(Query {
-                until: day,
+                until: day(9),
                 currency: Currency::Eur,
             })
-            .await;
-        assert!(matches!(result, Err(UseCaseError::Refusal(_))));
+            .await
+            .unwrap();
+
+        let euros = Money::new(Decimal::from(100), Currency::Eur);
+        assert_eq!(output.points, [(day(1), euros), (day(9), euros)]);
     }
 }

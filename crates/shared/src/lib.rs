@@ -70,22 +70,20 @@ impl fmt::Display for ValuationId {
     }
 }
 
-/// Devise d'un montant.
+/// Devise d'un montant. Seul l'euro est proposé pour l'instant (docs/specs/net-worth.md) ;
+/// le reste du code gère déjà plusieurs devises : en ajouter une, c'est une variante ici,
+/// son code ci-dessous et son symbole dans `server::format::symbol`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Currency {
     Eur,
-    Usd,
-    Chf,
 }
 
 impl Currency {
-    pub const ALL: [Currency; 3] = [Currency::Eur, Currency::Usd, Currency::Chf];
+    pub const ALL: [Currency; 1] = [Currency::Eur];
 
     pub fn code(self) -> &'static str {
         match self {
             Currency::Eur => "EUR",
-            Currency::Usd => "USD",
-            Currency::Chf => "CHF",
         }
     }
 }
@@ -167,9 +165,7 @@ mod tests {
         assert_eq!(total, Ok(Money::new(Decimal::new(1300, 2), Currency::Eur)));
     }
 
-    #[test]
-    fn refuse_de_melanger_deux_devises() {
-        let total = Money::zero(Currency::Eur) + Money::zero(Currency::Usd);
-        assert!(total.is_err());
-    }
+    // Avec une deuxième devise, rétablir les tests du refus de mélanger les devises : ici
+    // (addition), dans read_net_worth et read_net_worth_history (total incalculable) et dans
+    // update_asset (devise figée d'un actif valorisé).
 }

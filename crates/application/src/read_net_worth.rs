@@ -112,36 +112,4 @@ mod tests {
         );
         assert_eq!(output.lines.len(), 2);
     }
-
-    #[tokio::test]
-    async fn rend_les_actifs_meme_quand_le_total_melange_les_devises() {
-        let day = NaiveDate::from_ymd_opt(2026, 11, 9).unwrap();
-        let assets = [Asset {
-            id: "us".into(),
-            name: "Compte US".into(),
-            kind: AssetKind::BankAccount,
-            currency: Currency::Usd,
-        }];
-        let valuations = [Valuation {
-            id: shared::ValuationId::generate(),
-            asset_id: "us".into(),
-            value: Money::new(Decimal::from(100), Currency::Usd),
-            valued_on: day,
-        }];
-        let use_case = ReadNetWorth {
-            asset_provider: Arc::new(InMemoryAssets::with(assets)),
-            valuation_provider: Arc::new(InMemoryValuations::with(valuations)),
-        };
-
-        let output = use_case
-            .handle(Query {
-                at: day,
-                currency: Currency::Eur,
-            })
-            .await
-            .unwrap();
-
-        assert!(output.total.is_err());
-        assert_eq!(output.lines.len(), 1);
-    }
 }

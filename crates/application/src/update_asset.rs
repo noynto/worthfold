@@ -93,7 +93,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn modifie_le_nom_le_type_et_la_devise_d_un_actif_sans_historique() {
+    async fn modifie_le_nom_et_le_type_d_un_actif_sans_historique() {
         let assets = Arc::new(InMemoryAssets::with([livret()]));
         let use_case = UpdateAsset {
             asset_provider: assets.clone(),
@@ -101,19 +101,19 @@ mod tests {
         };
 
         use_case
-            .handle(command("Compte courant", Currency::Usd))
+            .handle(command("Compte courant", Currency::Eur))
             .await
             .unwrap();
 
         let saved = assets.read(&"a".into()).await.unwrap().unwrap();
         assert_eq!(
             (saved.name.as_str(), saved.kind, saved.currency),
-            ("Compte courant", AssetKind::BankAccount, Currency::Usd)
+            ("Compte courant", AssetKind::BankAccount, Currency::Eur)
         );
     }
 
     #[tokio::test]
-    async fn refuse_de_changer_la_devise_d_un_actif_valorise() {
+    async fn refuse_de_changer_le_sens_d_un_actif_valorise() {
         let valuation = Valuation {
             id: shared::ValuationId::generate(),
             asset_id: "a".into(),
@@ -125,10 +125,6 @@ mod tests {
             valuation_provider: Arc::new(InMemoryValuations::with([valuation])),
         };
 
-        assert!(matches!(
-            use_case.handle(command("Livret", Currency::Usd)).await,
-            Err(UseCaseError::Refusal(_))
-        ));
         // Un avoir valorisé ne devient pas un prêt.
         let to_loan = Command {
             kind: AssetKind::Loan,

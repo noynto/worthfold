@@ -20,7 +20,7 @@ Un actif est ce que l'on possède ou ce que l'on doit : un nom, un type et une d
 
 ## Devises et montants
 
-- Devises prises en charge : EUR, USD, CHF.
+- Devise proposée : l'euro (EUR) seulement, pour l'instant (voir [Patrimoine net](net-worth.md#limites-actuelles)). Le code gère déjà plusieurs devises : en ajouter une, c'est une variante de `Currency`, son code et son symbole ; le choix de la devise réapparaît alors dans les formulaires, et les tests du refus de mélanger les devises sont à rétablir (voir `crates/shared/src/lib.rs`).
 - Un montant est un `Money` : une valeur décimale exacte et sa devise. Additionner deux devises différentes est refusé.
 - Une valorisation prend la devise de son actif.
 

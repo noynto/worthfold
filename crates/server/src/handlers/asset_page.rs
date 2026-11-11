@@ -139,7 +139,7 @@ struct AssetPage {
     section: &'static str,
     detail: AssetDetail,
     /// « Montant », ou « Capital restant dû » pour un prêt.
-    amount_label: &'static str,
+    amount_label: String,
     today_iso: String,
     error: Option<String>,
     /// Confirmation d'une action qui a redirigé ici, affichée dans la snackbar (message flash).
@@ -161,11 +161,15 @@ pub async fn get_asset_page(
     let had_flash = flash.is_some();
     let page = render(AssetPage {
         section: "assets",
-        amount_label: if output.asset.kind.is_liability() {
-            "Capital restant dû"
-        } else {
-            "Montant"
-        },
+        amount_label: format!(
+            "{} ({})",
+            if output.asset.kind.is_liability() {
+                "Capital restant dû"
+            } else {
+                "Montant"
+            },
+            format::symbol(output.asset.currency)
+        ),
         detail: asset_detail(&output, today),
         today_iso: iso_date(today),
         error: params.error,

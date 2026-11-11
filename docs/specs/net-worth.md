@@ -24,6 +24,6 @@ L'historique (`service::net_worth_history`) calcule le patrimoine net **à chaqu
 
 ## Limites actuelles
 
-- **L'euro, par choix** : le total et l'historique sont calculés en euros, et aucune conversion de devises n'est prévue. Un actif valorisé dans une autre devise rend le total indisponible : la page d'accueil affiche toujours la liste des actifs (pour pouvoir corriger), avec la raison à la place du total, et le graphique affiche le même message.
+- **L'euro, par choix** : le total et l'historique sont calculés en euros, et aucune conversion de devises n'est prévue. C'est aussi la seule devise proposée, ce qui garde le total toujours calculable. Si une autre devise est ajoutée un jour, un actif valorisé dans cette devise rendra le total indisponible : la page d'accueil affiche toujours la liste des actifs (pour pouvoir corriger), avec la raison à la place du total, et le graphique affiche le même message.
 - **Prêts à jour à la main** : le capital restant dû n'est pas encore calculé à partir d'un tableau d'amortissement.
 - **Pas d'authentification** : l'application n'écoute que sur la machine locale.

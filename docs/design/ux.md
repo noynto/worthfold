@@ -20,7 +20,7 @@ L'utilisateur sait toujours ce qui se passe, dans les trois temps d'une action :
 
 ## 3. Prévenir plutôt que corriger
 
-- Des valeurs par défaut utiles : la date du jour, la devise la plus courante.
+- Des valeurs par défaut utiles : la date du jour. Un choix à une seule option n'est pas montré : la devise n'est pas demandée tant que seul l'euro est proposé.
 - Les contraintes sont dans les champs (`required`, `maxlength`, `max` sur une date, clavier numérique avec `inputmode="decimal"`).
 - Le serveur applique **les mêmes règles** : un champ du navigateur se contourne, une règle métier non.
 - Une saisie libre est acceptée sous toutes ses formes raisonnables (`1 234,56`, `1234.56`).

@@ -4,7 +4,7 @@
   {# Modification : secondaire, repliée (règle d'UX 7). #}
   <details class="group rounded-xl bg-surface-container-low p-4 md:p-6">
     <summary class="state-layer flex min-h-12 cursor-pointer list-none items-center justify-between rounded-md px-2 text-title-medium [&::-webkit-details-marker]:hidden">
-      Modifier le nom, le type ou la devise
+      Modifier le nom{% if detail.currencies.len() > 1 %}, le type ou la devise{% else %} ou le type{% endif %}
       <span aria-hidden="true" class="text-on-surface-variant transition-transform group-open:rotate-180">▾</span>
     </summary>
     <p id="error-edit" role="alert" class="mt-3 rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container empty:hidden"></p>
@@ -18,7 +18,9 @@
           {% for kind in detail.kinds %}<option value="{{ kind.0 }}"{% if kind.0 == detail.kind_code %} selected{% endif %}>{{ kind.1 }}</option>{% endfor %}
         </select>
       </label>
-      {% if detail.currency_locked %}
+      {% if detail.currencies.len() < 2 %}
+      <input type="hidden" name="currency" value="{{ detail.currency }}">
+      {% else if detail.currency_locked %}
       <div class="field-label">Devise
         <input type="hidden" name="currency" value="{{ detail.currency }}">
         <p class="text-body-large text-on-surface">{{ detail.currency }}
