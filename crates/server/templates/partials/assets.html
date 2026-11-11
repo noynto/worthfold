@@ -1,0 +1,27 @@
+{# Fragment : la liste des actifs. Chaque ligne entière mène à la page de l'actif (valorisation, historique,
+   modification) : la liste présente, elle ne sert pas à saisir. Se recharge seule sur `worth-changed`. #}
+<section id="assets" class="rounded-xl bg-surface-container-low p-2 md:p-3" hx-get="/fragments/assets" hx-trigger="worth-changed from:body" hx-swap="outerHTML">
+  <h2 class="sr-only">Liste des actifs</h2>
+  {% if lines.is_empty() %}
+  <p class="px-4 py-6 text-body-medium text-on-surface-variant">Aucun actif pour l'instant : ajoute le premier ci-dessous.</p>
+  {% else %}
+  <ul class="divide-y divide-outline-variant">
+  {% for line in lines %}
+    <li>
+      <a href="/assets/{{ line.id }}" class="state-layer flex min-h-16 items-center gap-4 rounded-md px-4 py-4">
+        <span class="min-w-0 grow">
+          <span class="block break-words text-title-medium">{{ line.name }}</span>
+          <span class="block text-body-medium text-on-surface-variant">{{ line.kind }}</span>
+        </span>
+        <span class="shrink-0 text-right">
+          <span class="block whitespace-nowrap text-title-medium tabular-nums {% if line.negative %}text-error{% endif %}">{{ line.value }}</span>
+          <span class="block text-label-medium text-on-surface-variant">{{ line.valued_on }}</span>
+          {% if let Some(freshness) = line.freshness %}<span class="block text-label-medium text-tertiary">{{ freshness }}</span>{% endif %}
+        </span>
+        <span aria-hidden="true" class="text-title-large text-on-surface-variant">›</span>
+      </a>
+    </li>
+  {% endfor %}
+  </ul>
+  {% endif %}
+</section>

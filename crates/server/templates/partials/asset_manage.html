@@ -1,0 +1,50 @@
+{# Modifier et supprimer un actif. Se recharge sur `worth-changed` (même route que l'en-tête, `hx-select`) :
+   après une valorisation, le nombre de valorisations annoncé et le verrou de la devise restent justes. #}
+<div id="asset-manage" class="flex flex-col gap-4" hx-get="/fragments/assets/{{ detail.id }}" hx-select="#asset-manage" hx-trigger="worth-changed from:body" hx-swap="outerHTML">
+  {# Modification : secondaire, repliée (règle d'UX 7). #}
+  <details class="group rounded-xl bg-surface-container-low p-4 md:p-6">
+    <summary class="state-layer flex min-h-12 cursor-pointer list-none items-center justify-between rounded-md px-2 text-title-medium [&::-webkit-details-marker]:hidden">
+      Modifier le nom, le type ou la devise
+      <span aria-hidden="true" class="text-on-surface-variant transition-transform group-open:rotate-180">▾</span>
+    </summary>
+    <p id="error-edit" role="alert" class="mt-3 rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container empty:hidden"></p>
+    <form class="mt-4 grid max-w-md gap-4 px-2" method="post" action="/assets/{{ detail.id }}"
+          hx-post="/assets/{{ detail.id }}" hx-target="#error-edit" hx-swap="innerHTML" hx-disabled-elt="find button">
+      <label class="field-label">Nom
+        <input class="field" name="name" value="{{ detail.name }}" required maxlength="100">
+      </label>
+      <label class="field-label">Type
+        <select class="field" name="kind">
+          {% for kind in detail.kinds %}<option value="{{ kind.0 }}"{% if kind.0 == detail.kind_code %} selected{% endif %}>{{ kind.1 }}</option>{% endfor %}
+        </select>
+      </label>
+      {% if detail.currency_locked %}
+      <div class="field-label">Devise
+        <input type="hidden" name="currency" value="{{ detail.currency }}">
+        <p class="text-body-large text-on-surface">{{ detail.currency }}
+          <span class="text-body-medium text-on-surface-variant">· figée : {{ detail.valuations }} déjà enregistrée{% if detail.valuations.ends_with('s') %}s{% endif %}</span>
+        </p>
+      </div>
+      {% else %}
+      <label class="field-label">Devise
+        <select class="field" name="currency">
+          {% for c in detail.currencies %}<option{% if *c == detail.currency %} selected{% endif %}>{{ c }}</option>{% endfor %}
+        </select>
+      </label>
+      {% endif %}
+      <div><button class="btn-tonal">Enregistrer les modifications</button></div>
+    </form>
+  </details>
+
+  <section class="rounded-xl bg-surface-container-low p-4 md:p-6">
+    <h2 class="px-2 text-title-medium">Supprimer</h2>
+    <p class="mt-1 px-2 text-body-medium text-on-surface-variant">{% if detail.currency_locked %}Supprime aussi son historique : {{ detail.valuations }}.{% else %}Cet actif n'a encore aucune valorisation.{% endif %} La suppression est définitive.</p>
+    {# hx-confirm affiche le texte de l'attribut tel quel (jamais exécuté) : le nom y est échappé par askama. #}
+    <form class="mt-4 px-2" method="post" action="/assets/{{ detail.id }}/delete"
+          hx-post="/assets/{{ detail.id }}/delete" hx-target="#error-delete" hx-swap="innerHTML" hx-disabled-elt="find button"
+          hx-confirm="{{ detail.delete_confirm }}">
+      <button class="btn-outlined-error">Supprimer l'actif</button>
+    </form>
+    <p id="error-delete" role="alert" class="mt-3 rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container empty:hidden"></p>
+  </section>
+</div>

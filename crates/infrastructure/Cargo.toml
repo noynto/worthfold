@@ -1,0 +1,19 @@
+[package]
+name = "worthfold-infrastructure"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = "1.0.104"
+asset = { package = "worthfold-asset", path = "../asset" }
+async-trait = "0.1.92"
+chrono = "0.4.45"
+shared = { package = "worthfold-shared", path = "../shared" }
+sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "sqlite", "macros", "migrate"] }
+valuation = { package = "worthfold-valuation", path = "../valuation" }
+
+[dev-dependencies]
+rust_decimal = "1.43.0"
+tokio = { version = "1.54.1", features = ["macros", "rt"] }

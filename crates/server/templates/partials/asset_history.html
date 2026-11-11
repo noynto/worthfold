@@ -1,0 +1,28 @@
+{# L'historique d'un actif, du plus récent au plus ancien, avec l'écart à la valorisation précédente.
+   Chaque ligne peut être supprimée (saisie erronée). Se recharge seul sur `worth-changed`
+   (même route que l'en-tête, `hx-select` en extrait sa partie). #}
+<section id="asset-history" class="rounded-xl bg-surface-container-low p-2 md:p-3" hx-get="/fragments/assets/{{ detail.id }}" hx-select="#asset-history" hx-trigger="worth-changed from:body" hx-swap="outerHTML">
+  <h2 class="px-4 pb-1 pt-3 text-title-medium">Historique</h2>
+  <p id="error-history" role="alert" class="mx-2 mt-2 rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container empty:hidden"></p>
+  {% if detail.history.is_empty() %}
+  <p class="px-4 py-4 text-body-medium text-on-surface-variant">Aucune valorisation pour l'instant : saisis la première ci-dessus.</p>
+  {% else %}
+  <ol class="divide-y divide-outline-variant">
+    {% for row in detail.history %}
+    <li class="flex items-center gap-4 py-2 pl-4 pr-1">
+      <span class="grow text-body-large tabular-nums">{{ row.date }}</span>
+      <span class="text-right">
+        <span class="block text-title-medium tabular-nums {% if row.negative %}text-error{% endif %}">{{ row.value }}</span>
+        {% if let Some(variation) = row.variation %}<span class="block text-label-medium tabular-nums {% if row.variation_down %}text-error{% else %}text-on-surface-variant{% endif %}">{{ variation }}</span>{% endif %}
+      </span>
+      {# Corriger une saisie erronée. hx-confirm affiche son texte tel quel, sans l'exécuter. #}
+      <form method="post" action="/assets/{{ detail.id }}/valuations/{{ row.id }}/delete"
+            hx-post="/assets/{{ detail.id }}/valuations/{{ row.id }}/delete" hx-target="#error-history" hx-swap="innerHTML" hx-disabled-elt="find button"
+            hx-confirm="{{ row.delete_confirm }}">
+        <button class="btn-text-error" aria-label="Supprimer la valorisation du {{ row.date }}">Supprimer</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+</section>

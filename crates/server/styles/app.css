@@ -1,0 +1,238 @@
+/*
+ * worthfold — design system Material 3 Expressive, en jetons Tailwind CSS v4.
+ * Compilé au build par `build.rs` (exécutable autonome tailwindcss) : aucun JavaScript côté navigateur.
+ * Référence : docs/design/foundations.md. Jamais de valeur arbitraire dans les templates : on passe par ces jetons.
+ */
+@import "tailwindcss";
+@source "../templates";
+
+/* ── Jetons ──────────────────────────────────────────────────────────────────
+ * `static` : toutes les variables sont émises, même inutilisées par les templates,
+ * car le graphique SVG (servi à part) lit ces mêmes variables.
+ */
+@theme static {
+  /* On repart de zéro : seuls les jetons M3 existent. */
+  --color-*: initial;
+  --radius-*: initial;
+  --text-*: initial;
+  --font-*: initial;
+
+  /* Couleur : schéma M3 « Tonal spot », spécification 2025, couleur source #0F766E. Thème clair. */
+  --color-primary: #1d6a63;
+  --color-on-primary: #e2fffa;
+  --color-primary-container: #a8f0e7;
+  --color-on-primary-container: #045c56;
+  --color-secondary: #4a6460;
+  --color-on-secondary: #e2fffa;
+  --color-secondary-container: #cce8e4;
+  --color-on-secondary-container: #3d5653;
+  --color-tertiary: #356579;
+  --color-on-tertiary: #f3faff;
+  --color-tertiary-container: #b7e7ff;
+  --color-on-tertiary-container: #245669;
+  --color-error: #a83836;
+  --color-on-error: #fff7f6;
+  --color-error-container: #fa746f;
+  --color-on-error-container: #6e0a12;
+  --color-surface: #f6faf8;
+  --color-on-surface: #2a3433;
+  --color-on-surface-variant: #56615f;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eef5f3;
+  --color-surface-container: #e7f0ed;
+  --color-surface-container-high: #e1eae8;
+  --color-surface-container-highest: #d9e5e2;
+  --color-outline: #727d7b;
+  --color-outline-variant: #a9b4b2;
+  --color-inverse-surface: #0a0f0e;
+  --color-inverse-on-surface: #999e9c;
+  --color-scrim: #000000;
+
+  /* Forme : échelle M3 Expressive (ShapeTokens, androidx). `rounded-full` reste celui de Tailwind. */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-lg-increased: 20px;
+  --radius-xl: 28px;
+  --radius-xl-increased: 32px;
+  --radius-2xl: 48px;
+
+  /* Typographie : Roboto Flex (police par défaut de M3 Expressive), échelle M3 (TypeScaleTokens, androidx). */
+  --font-sans: "Roboto Flex", system-ui, sans-serif;
+
+  --text-display-large: 3.5625rem;
+  --text-display-large--line-height: 4rem;
+  --text-display-large--letter-spacing: -0.015625rem;
+  --text-display-medium: 2.8125rem;
+  --text-display-medium--line-height: 3.25rem;
+  --text-headline-small: 1.5rem;
+  --text-headline-small--line-height: 2rem;
+  --text-title-large: 1.375rem;
+  --text-title-large--line-height: 1.75rem;
+  --text-title-medium: 1rem;
+  --text-title-medium--line-height: 1.5rem;
+  --text-title-medium--letter-spacing: 0.009375rem;
+  --text-title-medium--font-weight: 500;
+  --text-body-large: 1rem;
+  --text-body-large--line-height: 1.5rem;
+  --text-body-large--letter-spacing: 0.03125rem;
+  --text-body-medium: 0.875rem;
+  --text-body-medium--line-height: 1.25rem;
+  --text-body-medium--letter-spacing: 0.015625rem;
+  --text-label-large: 0.875rem;
+  --text-label-large--line-height: 1.25rem;
+  --text-label-large--letter-spacing: 0.00625rem;
+  --text-label-large--font-weight: 500;
+  --text-label-medium: 0.75rem;
+  --text-label-medium--line-height: 1rem;
+  --text-label-medium--letter-spacing: 0.03125rem;
+  --text-label-medium--font-weight: 500;
+
+  /* Mouvement : ressorts M3 Expressive (ExpressiveMotionTokens, androidx) convertis en courbes `linear()`.
+   * spatial      : amortissement 0,8 (léger dépassement) — positions, tailles, formes.
+   * spatial-fast : amortissement 0,6 (rebond visible)    — petits éléments, morphing des boutons.
+   * effects      : amortissement 1,0 (sans dépassement)  — couleurs et opacités. */
+  --ease-spatial: linear(0, 0.052, 0.17, 0.316, 0.463, 0.597, 0.712, 0.804, 0.875, 0.927, 0.963, 0.987, 1.002, 1.011, 1.014, 1.015, 1.014, 1.012, 1.01, 1.008, 1.006, 1.004, 1.003, 1.002, 1);
+  --ease-spatial-fast: linear(0, 0.075, 0.248, 0.456, 0.657, 0.825, 0.95, 1.033, 1.078, 1.094, 1.091, 1.076, 1.057, 1.038, 1.021, 1.008, 0.999, 0.994, 0.991, 0.991, 0.992, 0.994, 0.996, 0.998, 1);
+  --ease-effects: linear(0, 0.18, 0.454, 0.67, 0.811, 0.896, 0.944, 0.97, 0.985, 0.992, 0.996, 0.998, 1);
+}
+
+/* Thème sombre : mêmes rôles, valeurs du schéma sombre. Les utilitaires lisent les variables, ils suivent. */
+@layer base {
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-primary: #9cd1c9;
+      --color-on-primary: #0f4843;
+      --color-primary-container: #265b55;
+      --color-on-primary-container: #b8eee6;
+      --color-secondary: #b1ccc8;
+      --color-on-secondary: #2c4542;
+      --color-secondary-container: #27403d;
+      --color-on-secondary-container: #a9c5c0;
+      --color-tertiary: #d9f2ff;
+      --color-on-tertiary: #2e5e72;
+      --color-tertiary-container: #b7e7ff;
+      --color-on-tertiary-container: #245669;
+      --color-error: #fa746f;
+      --color-on-error: #490006;
+      --color-error-container: #871f21;
+      --color-on-error-container: #ff9993;
+      --color-surface: #0a0f0e;
+      --color-on-surface: #dce8e5;
+      --color-on-surface-variant: #a2adab;
+      --color-surface-container-lowest: #000000;
+      --color-surface-container-low: #0e1514;
+      --color-surface-container: #131b1a;
+      --color-surface-container-high: #192120;
+      --color-surface-container-highest: #1d2826;
+      --color-outline: #6d7876;
+      --color-outline-variant: #3f4a48;
+      --color-inverse-surface: #f6faf8;
+      --color-inverse-on-surface: #515655;
+    }
+  }
+
+  @font-face {
+    font-family: "Roboto Flex";
+    font-style: normal;
+    font-weight: 100 1000;
+    font-display: swap;
+    src: url("/static/fonts/roboto-flex-latin.woff2") format("woff2");
+  }
+
+  html {
+    color-scheme: light dark;
+  }
+
+  /* Indicateur de focus M3 : 3 px en `secondary`, décalé de 2 px. Toujours visible au clavier. */
+  :focus-visible {
+    outline: 3px solid var(--color-secondary);
+    outline-offset: 2px;
+  }
+
+  /* Réduction des mouvements : plus de ressorts ni de transitions. */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      transition-duration: 0s !important;
+      animation-duration: 0s !important;
+    }
+  }
+}
+
+/* ── Composants ─────────────────────────────────────────────────────────────── */
+
+/* Couche d'état M3 : un voile de la couleur du contenu, 8 % au survol, 10 % au focus et à l'appui. */
+@utility state-layer {
+  position: relative;
+  isolation: isolate;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms var(--ease-effects);
+  }
+  &:hover::after { opacity: 0.08; }
+  &:focus-visible::after, &:active::after { opacity: 0.1; }
+}
+
+/* Bouton M3 Expressive : pilule au repos, qui se resserre à l'appui (morphing de forme, ressort rapide). */
+@utility btn {
+  @apply state-layer inline-flex min-h-12 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full px-6 text-label-large;
+  transition: border-radius 360ms var(--ease-spatial-fast);
+  &:active { border-radius: var(--radius-md); }
+  /* Pendant l'envoi (hx-disabled-elt) : pas de double envoi, et le curseur indique l'attente. */
+  &:disabled { opacity: 0.6; cursor: progress; }
+}
+@utility btn-filled {
+  @apply btn bg-primary text-on-primary;
+}
+@utility btn-tonal {
+  @apply btn bg-secondary-container text-on-secondary-container;
+}
+@utility btn-outlined-error {
+  @apply btn border border-error text-error;
+}
+/* Bouton texte M3, destructif : pour une action secondaire répétée dans une liste (supprimer une ligne). */
+@utility btn-text-error {
+  @apply btn px-3 text-error;
+}
+
+/* Champ « outlined » M3 : contour `outline` (contraste ≥ 3:1), coins xs, contour `primary` de 2 px au focus. */
+@utility field {
+  @apply min-h-12 w-full min-w-0 rounded-xs border border-outline bg-transparent px-4 text-body-large text-on-surface;
+  transition: border-color 150ms var(--ease-effects), box-shadow 150ms var(--ease-effects);
+  &::placeholder { color: var(--color-on-surface-variant); }
+  &:hover { border-color: var(--color-on-surface); }
+  &:focus { outline: none; border-color: var(--color-primary); box-shadow: inset 0 0 0 1px var(--color-primary); }
+}
+
+/* Snackbar M3 : surface inverse, coins xs. Entre avec le ressort spatial, reste 4 s, s'efface seule. */
+@utility snackbar {
+  @apply max-w-xl rounded-xs bg-inverse-surface px-4 py-3 text-body-medium text-inverse-on-surface shadow-lg;
+  animation: snackbar 5s linear both;
+}
+@keyframes snackbar {
+  0% { opacity: 0; transform: translateY(16px); animation-timing-function: var(--ease-spatial-fast); }
+  8% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; animation-timing-function: var(--ease-effects); }
+  100% { opacity: 0; visibility: hidden; }
+}
+/* Réduction des mouvements : la règle générale ramènerait l'animation à sa fin (message invisible).
+   La snackbar apparaît et disparaît d'un coup, sans mouvement. */
+@media (prefers-reduced-motion: reduce) {
+  .snackbar { animation: snackbar-static 5s step-end both !important; }
+}
+@keyframes snackbar-static {
+  100% { visibility: hidden; }
+}
+
+/* Libellé au-dessus d'un champ. */
+@utility field-label {
+  @apply grid gap-1 text-label-medium text-on-surface-variant;
+}

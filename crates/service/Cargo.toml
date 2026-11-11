@@ -1,0 +1,15 @@
+[package]
+name = "worthfold-service"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+asset = { package = "worthfold-asset", path = "../asset" }
+chrono = "0.4.45"
+shared = { package = "worthfold-shared", path = "../shared" }
+valuation = { package = "worthfold-valuation", path = "../valuation" }
+
+[dev-dependencies]
+rust_decimal = "1.43.0"

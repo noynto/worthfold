@@ -1,0 +1,2 @@
+{# Fragment : le graphique, en SVG intégré. `svg` est produit par chart.rs (nombres, dates, montants, message échappé). #}
+<div id="chart" class="aspect-[720/260] w-full" hx-get="/fragments/chart" hx-trigger="worth-changed from:body" hx-swap="outerHTML">{{ svg|safe }}</div>

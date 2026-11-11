@@ -1,0 +1,27 @@
+[package]
+name = "worthfold-server"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = "1.0.104"
+application = { package = "worthfold-application", path = "../application" }
+askama = "0.16.1"
+asset = { package = "worthfold-asset", path = "../asset" }
+axum = "0.8.9"
+chrono = "0.4.45"
+rust_decimal = "1.43.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_urlencoded = "0.7.1"
+shared = { package = "worthfold-shared", path = "../shared" }
+tokio = { version = "1.54.1", features = ["macros", "net", "signal"] }
+tracing = "0.1.44"
+valuation = { package = "worthfold-valuation", path = "../valuation" }
+
+[dev-dependencies]
+http-body-util = "0.1.5"
+testing = { package = "worthfold-testing", path = "../testing" }
+tokio = { version = "1.54.1", features = ["macros", "rt"] }
+tower = { version = "0.5.3", features = ["util"] }

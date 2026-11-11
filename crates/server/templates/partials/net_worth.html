@@ -1,0 +1,16 @@
+{# Fragment : le patrimoine net. Se recharge seul après chaque modification (événement `worth-changed`). #}
+<div id="net-worth" class="flex flex-col gap-4" hx-get="/fragments/net-worth" hx-trigger="worth-changed from:body" hx-swap="outerHTML">
+  <section class="rounded-xl-increased px-6 py-8 md:px-10 md:py-10 {% if total_negative %}bg-error-container text-on-error-container{% else %}bg-primary-container text-on-primary-container{% endif %}">
+    <h1 class="text-label-large uppercase tracking-widest">Patrimoine net <span class="normal-case tracking-normal opacity-80">au {{ today }}</span></h1>
+    {% if let Some(total) = total %}
+    <p class="mt-2 text-display-medium font-medium tabular-nums md:text-display-large">{{ total }}</p>
+    {% else %}
+    <p class="mt-2 text-display-medium font-medium md:text-display-large">—</p>
+    {% endif %}
+  </section>
+  {% if let Some(issue) = total_issue %}
+  <p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">
+    Total indisponible : {{ issue }} Les taux de change ne sont pas encore pris en charge.
+  </p>
+  {% endif %}
+</div>

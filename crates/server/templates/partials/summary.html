@@ -1,0 +1,41 @@
+{# Carte de synthèse des actifs (tableau de bord) : résumer sans détailler ; la gestion est sur la page « Actifs ». #}
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6">
+  <div class="flex flex-wrap items-center justify-between gap-3 px-2">
+    <h2 class="text-title-medium">Actifs <span class="text-body-medium text-on-surface-variant">· {{ asset_count }}</span></h2>
+    {% if asset_count > 0 %}<a href="/assets" class="btn-tonal">Gérer les actifs</a>{% endif %}
+  </div>
+
+  {% if asset_count == 0 %}
+  <div class="flex flex-col items-start gap-4 px-2 pt-4">
+    <p class="text-body-medium text-on-surface-variant">Aucun actif pour l'instant. Ajoute tes comptes, livrets, biens et prêts pour suivre ton patrimoine.</p>
+    <a href="/assets#add" class="btn-filled">Ajouter un actif</a>
+  </div>
+  {% else %}
+  <dl class="mt-4 grid grid-cols-2 gap-3">
+    <div class="rounded-lg bg-surface-container px-4 py-3">
+      <dt class="text-label-medium text-on-surface-variant">Avoirs</dt>
+      <dd class="mt-1 text-title-large tabular-nums">{{ assets_total }}</dd>
+    </div>
+    <div class="rounded-lg bg-surface-container px-4 py-3">
+      <dt class="text-label-medium text-on-surface-variant">Dettes</dt>
+      <dd class="mt-1 text-title-large tabular-nums {% if has_liabilities %}text-error{% endif %}">{{ liabilities_total }}</dd>
+    </div>
+  </dl>
+
+  {% if stale.is_empty() %}
+  <p class="mt-4 px-2 text-body-medium text-on-surface-variant">Toutes les valeurs ont moins de 90 jours.</p>
+  {% else %}
+  <h3 class="mt-5 px-2 text-label-large text-on-surface-variant">À mettre à jour</h3>
+  <ul class="mt-1 divide-y divide-outline-variant">
+    {% for line in stale %}
+    <li>
+      <a href="/assets/{{ line.id }}" class="state-layer flex min-h-12 items-center justify-between gap-4 rounded-md px-2 py-2">
+        <span class="text-body-large">{{ line.name }}</span>
+        <span class="text-label-medium text-tertiary">{% if line.valued_on.is_empty() %}jamais valorisé{% else %}valeur du {{ line.valued_on }}{% endif %}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% endif %}
+</section>

@@ -1,0 +1,11 @@
+{# L'en-tête d'un actif : type, nom, dernière valeur et sa fraîcheur. Se recharge seul sur `worth-changed`
+   (même route que l'historique, `hx-select` en extrait sa partie). #}
+<section id="asset-header" class="rounded-xl-increased bg-surface-container-low p-6 md:p-10" hx-get="/fragments/assets/{{ detail.id }}" hx-select="#asset-header" hx-trigger="worth-changed from:body" hx-swap="outerHTML">
+  <p class="text-label-large text-on-surface-variant">{{ detail.kind_label }}</p>
+  <h1 class="mt-1 break-words text-headline-small">{{ detail.name }}</h1>
+  <p class="mt-4 text-display-medium font-medium tabular-nums {% if detail.negative %}text-error{% endif %}">{{ detail.value }}</p>
+  <p class="mt-1 text-label-medium text-on-surface-variant">
+    {% if !detail.valued_on.is_empty() %}Valeur du {{ detail.valued_on }}{% endif %}
+    {% if let Some(freshness) = detail.freshness %}<span class="text-tertiary">{% if !detail.valued_on.is_empty() %} · {% endif %}{{ freshness }}</span>{% endif %}
+  </p>
+</section>

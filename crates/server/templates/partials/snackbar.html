@@ -1,0 +1,3 @@
+{# Confirmation d'une action (règle d'UX 2), échangée hors cible par htmx dans la zone permanente de base.html :
+   la zone `role="status"` reste en place (annoncée aux lecteurs d'écran), le message est neuf (l'animation repart). #}
+<div id="snackbar-region" hx-swap-oob="innerHTML"><p class="snackbar">{{ message }}</p></div>

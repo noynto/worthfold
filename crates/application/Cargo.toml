@@ -1,0 +1,20 @@
+[package]
+name = "worthfold-application"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = "1.0.104"
+asset = { package = "worthfold-asset", path = "../asset" }
+chrono = "0.4.45"
+rust_decimal = "1.43.0"
+service = { package = "worthfold-service", path = "../service" }
+shared = { package = "worthfold-shared", path = "../shared" }
+thiserror = "2.0.21"
+valuation = { package = "worthfold-valuation", path = "../valuation" }
+
+[dev-dependencies]
+testing = { package = "worthfold-testing", path = "../testing" }
+tokio = { version = "1.54.1", features = ["macros", "rt"] }

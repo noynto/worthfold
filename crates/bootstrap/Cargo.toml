@@ -1,0 +1,21 @@
+[package]
+name = "worthfold-bootstrap"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+# Le point d'entrée porte le nom de l'application.
+[[bin]]
+name = "worthfold"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.104"
+application = { package = "worthfold-application", path = "../application" }
+dotenvy = "0.15.7"
+infrastructure = { package = "worthfold-infrastructure", path = "../infrastructure" }
+server = { package = "worthfold-server", path = "../server" }
+tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread"] }
+tracing = "0.1.44"
+tracing-subscriber = "0.3.23"

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}worthfold{% endblock %}</title>
+  <link rel="preload" href="/static/fonts/roboto-flex-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/app.css">
+  {# htmx, embarqué dans le binaire. 422 et 500 sont affichés dans la cible (messages d'erreur), 204 ne change rien. #}
+  <meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true,"error":true},{"code":"500","swap":true,"error":true},{"code":"[45]..","swap":false,"error":true}]}'>
+  <script src="/static/htmx-2.0.11.min.js" defer></script>
+</head>
+<body class="min-h-dvh bg-surface font-sans text-body-large text-on-surface antialiased">
+  <main class="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 md:py-10">
+    {# Navigation M3 : deux destinations, la page active porte l'indicateur `secondary-container`. #}
+    <header class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-2">
+      <a href="/" class="text-title-large font-semibold tracking-tight text-primary">worthfold</a>
+      <nav aria-label="Navigation principale" class="flex gap-1">
+        <a href="/" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large {% if section == "dashboard" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}"{% if section == "dashboard" %} aria-current="page"{% endif %}>Tableau de bord</a>
+        <a href="/assets" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large {% if section == "assets" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}"{% if section == "assets" %} aria-current="page"{% endif %}>Actifs</a>
+      </nav>
+    </header>
+    {% block content %}{% endblock %}
+  </main>
+  {# Snackbar M3 : confirmations des actions, en bas de l'écran (voir docs/design/ux.md, règle 2). #}
+  <div id="snackbar-region" role="status" aria-live="polite" class="pointer-events-none fixed inset-x-0 bottom-4 z-10 flex justify-center px-4">{% block snackbar %}{% endblock %}</div>
+</body>
+</html>

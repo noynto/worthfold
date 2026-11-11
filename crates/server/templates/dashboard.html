@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% include "partials/net_worth.html" %}
+
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6">
+  <h2 class="px-2 pb-2 text-title-medium">Évolution</h2>
+  {# Complément chargé par htmx, avec un squelette à sa forme ; sans JavaScript, le SVG autonome. #}
+  <div class="aspect-[720/260] w-full animate-pulse rounded-lg bg-surface-container" hx-get="/fragments/chart" hx-trigger="load" hx-swap="outerHTML" aria-label="Chargement du graphique"></div>
+  <noscript><object class="block aspect-[720/260] w-full" data="/net-worth/chart.svg" type="image/svg+xml" aria-label="Évolution du patrimoine">Évolution du patrimoine</object></noscript>
+</section>
+
+{% include "partials/summary.html" %}
+{% endblock %}
