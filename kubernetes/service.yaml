@@ -1,0 +1,12 @@
+# Joignable dans le cluster seulement : l'Ingress (voir ingress.yaml.example) porte HTTPS.
+apiVersion: v1
+kind: Service
+metadata:
+  name: worthfold
+spec:
+  selector:
+    app: worthfold
+  ports:
+    - port: 80
+      targetPort: http
+  type: ClusterIP

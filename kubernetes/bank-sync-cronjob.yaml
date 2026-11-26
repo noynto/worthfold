@@ -1,0 +1,69 @@
+# Lecture planifiée des opérations de la banque : la même image, lancée en tâche one-shot
+# (WORTHFOLD_BANK_SYNC_TASK), qui journalise son compte rendu et s'arrête sans démarrer le serveur.
+# Toutes les 6 heures : quatre lectures par jour, ce que les banques autorisent sans toi.
+# Sans connexion bancaire configurée, la tâche ne lit rien. Utilise la même version d'image que le Deployment.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: worthfold-bank-sync
+spec:
+  schedule: "0 */6 * * *"
+  timeZone: Europe/Paris
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: worthfold-task
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            fsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: bank-sync
+              image: ghcr.io/noynto/worthfold:latest
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: WORTHFOLD_BANK_SYNC_TASK
+                  value: "true"
+              envFrom:
+                - configMapRef:
+                    name: worthfold-configs
+                - secretRef:
+                    name: worthfold-secrets
+              volumeMounts:
+                - name: enablebanking
+                  mountPath: /run/secrets/enablebanking
+                  readOnly: true
+              resources:
+                requests:
+                  memory: "32Mi"
+                  cpu: "10m"
+                limits:
+                  memory: "128Mi"
+                  cpu: "250m"
+          volumes:
+            - name: enablebanking
+              secret:
+                secretName: worthfold-secrets
+                optional: true
+                defaultMode: 0440
+                items:
+                  - key: enablebanking.pem
+                    path: enablebanking.pem

@@ -1,0 +1,26 @@
+# Adapte la classe, le nom de domaine et le Secret TLS (ou l'annotation de ton cert-manager) à ton cluster.
+# L'Ingress doit transmettre l'en-tête Host d'origine (c'est le cas par défaut de Traefik et d'ingress-nginx) :
+# la garde des requêtes le compare à WORTHFOLD_PUBLIC_URL.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: worthfold
+  # annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  # ingressClassName: traefik
+  tls:
+    - hosts:
+        - worthfold.example.com
+      secretName: worthfold-tls
+  rules:
+    - host: worthfold.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: worthfold
+                port:
+                  number: 80

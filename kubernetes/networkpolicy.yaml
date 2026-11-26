@@ -1,0 +1,22 @@
+# La base n'accepte que l'application et la tâche de lecture de la banque ; aucune autre ne l'atteint.
+# (Sans effet si le CNI du cluster ne gère pas les NetworkPolicy.)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: worthfold-postgres-from-app
+spec:
+  podSelector:
+    matchLabels:
+      app: worthfold-postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: worthfold
+        - podSelector:
+            matchLabels:
+              app: worthfold-task
+      ports:
+        - port: 5432

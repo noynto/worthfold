@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Le namespace est celui de la Kustomization Flux (ou `kubectl apply -n …`). Les Secrets et le ConfigMap viennent
+# des fichiers *.example, à copier et à chiffrer (SOPS, SealedSecret) : ils ne sont pas listés ici.
+resources:
+  - deployment.yaml
+  - service.yaml
+  - postgres.yaml
+  - networkpolicy.yaml
+  - bank-sync-cronjob.yaml
+# Pour figer une version (ou la laisser à l'automatisation d'images de Flux) :
+#   images:
+#     - name: ghcr.io/noynto/worthfold
+#       newTag: 1.0.0 # {"$imagepolicy": "flux-system:worthfold:tag"}

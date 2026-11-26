@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worthfold
+spec:
+  # Une seule instance : les sessions sont en base, mais l'application n'est pas faite pour être répliquée.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: worthfold
+  template:
+    metadata:
+      labels:
+        app: worthfold
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        # Donne au groupe la lecture de la clé de la banque montée depuis le Secret (mode 0440).
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: worthfold
+          image: ghcr.io/noynto/worthfold:latest
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: WORTHFOLD_PORT
+              value: "3000"
+            - name: WORTHFOLD_BIND_ADDRESS
+              value: 0.0.0.0
+          # Les clés des deux objets portent le nom des variables : voir config.yaml.example et secret.yaml.example.
+          envFrom:
+            - configMapRef:
+                name: worthfold-configs
+            - secretRef:
+                name: worthfold-secrets
+          # Aucun shell ni curl dans l'image : la sonde est le binaire. Une sonde httpGet enverrait l'IP du pod
+          # comme `Host`, que la garde des requêtes refuse.
+          startupProbe:
+            exec:
+              command: ["/worthfold", "healthcheck"]
+            periodSeconds: 3
+            failureThreshold: 20
+          readinessProbe:
+            exec:
+              command: ["/worthfold", "healthcheck"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["/worthfold", "healthcheck"]
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: enablebanking
+              mountPath: /run/secrets/enablebanking
+              readOnly: true
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "10m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+      volumes:
+        # La clé privée EnableBanking. Facultatif : sans elle, la connexion bancaire n'est pas configurée.
+        - name: enablebanking
+          secret:
+            secretName: worthfold-secrets
+            optional: true
+            defaultMode: 0440
+            items:
+              - key: enablebanking.pem
+                path: enablebanking.pem

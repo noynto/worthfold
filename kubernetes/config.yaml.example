@@ -1,0 +1,20 @@
+# Réglages non secrets. À copier en config.yaml et à adapter (hors dépôt, ou dans ton dépôt Flux).
+# Les clés portent le nom des variables d'environnement de l'application.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: worthfold-configs
+data:
+  # L'adresse que tape le navigateur, derrière l'Ingress HTTPS. Elle donne l'hôte accepté par la garde des
+  # requêtes, l'attribut Secure des cookies, l'en-tête HSTS et l'adresse de retour de la banque.
+  WORTHFOLD_PUBLIC_URL: "https://worthfold.example.com"
+  # Connexion bancaire (EnableBanking) : les deux ensemble, ou aucun (valeurs vides).
+  # La clé privée est dans le Secret worthfold-secrets (clé enablebanking.pem), montée à ce chemin.
+  WORTHFOLD_ENABLEBANKING_APP_ID: ""
+  WORTHFOLD_ENABLEBANKING_KEY_PATH: ""
+  # Un Ingress devant l'application : son adresse vient de X-Forwarded-For, pour le frein des essais de mot de passe.
+  # 0 si aucun proxy ; 2 s'il y a aussi un répartiteur de charge devant l'Ingress.
+  WORTHFOLD_PROXY_HOPS: "1"
+  # Remplace l'adresse de retour déduite de WORTHFOLD_PUBLIC_URL (rarement utile).
+  WORTHFOLD_BANK_REDIRECT_URL: ""
+  RUST_LOG: "info"
