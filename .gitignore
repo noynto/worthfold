@@ -3,3 +3,7 @@
 *.db-shm
 *.db-wal
 .env
+
+# Secrets locaux (clé privée EnableBanking) : jamais dans le dépôt
+/secrets/
+*.pem

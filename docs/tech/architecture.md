@@ -8,13 +8,19 @@ Chaque package porte le préfixe `worthfold-` (`worthfold-asset`, `worthfold-ser
 
 ```
 crates/
-├── shared/          identifiants et valeurs partagées : AssetId, Money, Currency
+├── shared/          identifiants et valeurs partagées : AssetId, TransactionId, CategoryId, EnvelopeId, PlannedPaymentId, Money, Currency
 ├── asset/           domaine des actifs : Asset, AssetKind, trait AssetProvider
 ├── valuation/       domaine des valorisations : Valuation, trait ValuationProvider
+├── transaction/     domaine des transactions : Transaction, TransactionSource, trait TransactionProvider
+├── category/        domaine des catégories : Category, CategoryKind, CategoryRule, trait CategoryProvider
+├── budget/          domaine du budget : Envelope, SavingsPlan, mois, trait BudgetProvider
+├── auth/            domaine de l'authentification : Credential, Session, Throttle, traits AuthProvider et PasswordHasher
+├── bank/            domaine de la connexion bancaire : BankConnection, BankAccount, traits BankConnectionProvider et BankAggregator (le port de l'agrégateur)
+├── recurrence/      domaine des paiements prévus : PlannedPayment, Schedule, Amount, Window, `occurrences`, trait RecurrenceProvider
 ├── service/         règles pures qui croisent plusieurs domaines
 ├── application/     cas d'usage, un module par action, et `UseCases` qui les réunit
 ├── testing/         providers en mémoire, pour les tests (dev-dependency uniquement)
-├── infrastructure/  implémentations des providers (sqlx + SQLite) et migrations
+├── infrastructure/  implémentations des providers (sqlx + PostgreSQL), migrations, adaptateur EnableBanking et hachage Argon2
 ├── server/          adaptateur web (bibliothèque) : axum, handlers, templates, mise en forme, graphique
 └── bootstrap/       binaire `worthfold` : configuration, assemblage, puis serveur ou tâche
 ```
@@ -24,14 +30,15 @@ crates/
 ```
 bootstrap (binaire) ──▶ server ─────────┐
         │                               ▼
-        ├──────────────────────────▶ application ──▶ service ──▶ asset, valuation, shared
+        ├──────────────────────────▶ application ──▶ service ──▶ asset, valuation, transaction, category, budget, recurrence, bank, auth, shared
         │
-        └──▶ infrastructure ──▶ asset, valuation, shared
+        └──▶ infrastructure ──▶ asset, valuation, transaction, category, budget, recurrence, bank, auth, shared
 ```
 
 - `asset`, `valuation` et `shared` ne dépendent d'aucune bibliothèque technique : ni sqlx, ni axum.
 - `application` ne connaît que le domaine et les services. Le compilateur l'empêche d'utiliser sqlx, même par accident.
-- **Seul `bootstrap` voit l'infrastructure.** Le serveur (et demain les tâches) ne reçoit que `application::UseCases` : il ignore SQLite comme la façon dont l'application est assemblée.
+- `server` ne dépend pas de `service` : les types de budget que les cas d'usage rendent dans leurs sorties (`EnvelopeStatus`, `MonthSummary`, `SavingsSuggestion`, `CalendarLine`, `Suggestion`…) sont ré-exportés par `application`.
+- **Seul `bootstrap` voit l'infrastructure.** Le serveur (et demain les tâches) ne reçoit que `application::UseCases` : il ignore PostgreSQL comme la façon dont l'application est assemblée.
 - `server` est une bibliothèque : elle ne peut pas dépendre de `bootstrap`, qui dépend d'elle. C'est pourquoi la structure qui réunit les cas d'usage (`UseCases`) vit dans `application`, la seule crate qui les connaît tous.
 - `testing` n'est ajoutée qu'en `[dev-dependencies]` : elle n'entre jamais dans un binaire.
 
@@ -41,7 +48,7 @@ Le `main` du binaire `worthfold` :
 
 1. charge le fichier `.env` s'il existe et initialise les journaux ;
 2. lit la configuration (`config.rs`) : une valeur invalide arrête le programme avec un message clair et le code 1 ;
-3. ouvre la base, applique les migrations et branche les adaptateurs SQLite sur les cas d'usage (`assembly.rs`, via `UseCases::new`) ;
+3. ouvre la base, applique les migrations et branche les adaptateurs PostgreSQL sur les cas d'usage (`assembly.rs`, via `UseCases::new`) ;
 4. lance **soit une tâche** (si sa variable d'activation est définie : elle s'exécute, puis le programme s'arrête avec le code 0 ou 1), **soit le serveur web** (`server::serve`), qui tourne jusqu'à Ctrl+C ou SIGTERM puis s'arrête proprement : il n'accepte plus de connexion et laisse finir les requêtes en cours. Voir [Tâches](tasks.md).
 
 Un seul binaire, donc une seule image : le serveur et les tâches planifiées tournent avec la même version.
@@ -72,27 +79,27 @@ impl RecordValuation {
 - L'`Output` porte tout ce dont l'appelant a besoin (`ReadAsset` rend l'actif et son historique trié, du plus récent au plus ancien).
 - `UseCaseError::Refusal(String)` : un refus de règle métier, avec un message en français prêt à être affiché. `UseCaseError::Technical(anyhow::Error)` : une panne, convertie automatiquement par `?`.
 
-Cas d'usage actuels : `AddAsset`, `ReadAsset`, `UpdateAsset`, `DeleteAsset`, `RecordValuation`, `DeleteValuation`, `ReadNetWorth`, `ReadNetWorthHistory`.
+Cas d'usage actuels : `AddAsset`, `ReadAsset`, `UpdateAsset`, `DeleteAsset`, `RecordValuation`, `DeleteValuation`, `ReadNetWorth`, `ReadNetWorthHistory`, `ImportTransactions`, `ReadTransactions`, `ReadCategories`, `AddCategory`, `AddDefaultCategories`, `DeleteCategory`, `AddCategoryRule`, `DeleteCategoryRule`, `ApplyCategoryRules`, `CategorizeTransaction`, `ReadBudget`, `SetEnvelope`, `SaveSavingsPlan`, `ReadPlannedPayments`, `AddPlannedPayment`, `DeletePlannedPayment`, `AddAmountStep`, `SetOccurrenceException`, `AcceptRecurrenceSuggestion`.
 
 ## Services (`service`)
 
-Des fonctions pures qui reçoivent des objets déjà lus et rendent une valeur : `latest_valuation`, `net_worth`, `breakdown` (avoirs et dettes), `net_worth_history`. Elles ne lisent ni la base, ni l'horloge (la date est un paramètre), et se testent sans doublure.
+Des fonctions pures qui reçoivent des objets déjà lus et rendent une valeur : `latest_valuation`, `net_worth`, `breakdown` (avoirs et dettes), `net_worth_history`, `bank_csv::parse` (lecture d'un relevé CSV) et `transactions::new_transactions` (les opérations pas encore connues du compte) `transactions::rule_assignments` (les catégories que les règles donnent aux opérations sans catégorie) `budget` (synthèse d'un mois, état des enveloppes, matelas évalué, versement d'épargne suggéré) et `recurrence` (reconnaître un paiement dans les relevés, montant observé, rapprochement des échéances avec les opérations, calendrier, détection). Le dépliage d'un paiement en échéances (`recurrence::occurrences`) ne croise aucun autre domaine : il vit avec lui. Elles ne lisent ni la base, ni l'horloge (la date est un paramètre), et se testent sans doublure.
 
 ## La date du jour
 
 Rien en dessous de `server` ne lit l'horloge : la date du jour est une **valeur passée explicitement**, dans la `Command` ou la `Query` (`RecordValuation::Command::today`, `ReadNetWorth::Query::at`, `ReadNetWorthHistory::Query::until`), puis aux méthodes du domaine et aux services. Pas de trait `Clock` à injecter : une fonction qui reçoit tout ce dont elle dépend se lit et se teste sans doublure (un test passe une date fixe).
 
-Côté web, `handlers::today()` est la seule lecture de l'horloge : chaque handler l'appelle une fois et passe la même date au cas d'usage et aux vues.
+Côté web, `handlers::today()` est la seule lecture de la date du jour : chaque handler l'appelle une fois et passe la même date au cas d'usage et aux vues. `handlers::now()` lit l'instant présent, uniquement pour dater et faire expirer les sessions ; il se passe de la même façon (`Command::now`).
 
 ## Infrastructure
 
-`PersistedAssets` et `PersistedValuations` implémentent les providers avec sqlx. Les requêtes sont écrites en SQL, avec des paramètres `?` : aucune valeur n'est concaténée dans une requête. Voir [Développement](development.md#base-de-données).
+`PersistedAssets`, `PersistedValuations`, `PersistedTransactions`, `PersistedCategories`, `PersistedBudget` et `PersistedRecurrence` implémentent les providers avec sqlx. Les requêtes sont écrites en SQL, avec des paramètres `?` : aucune valeur n'est concaténée dans une requête. Voir [Développement](development.md#base-de-données).
 
 ## Handlers (`server`)
 
 Un handler lit la requête vers la `Command`, appelle **un seul** cas d'usage, puis traduit le résultat en réponse : une page, un fragment, ou la réponse d'un formulaire (htmx ou non, voir [Web](web.md#formulaires)). Il ne contient aucune règle métier et ne parle à aucun provider.
 
-Les handlers sont rangés par page dans `crates/server/src/handlers/` : `dashboard.rs`, `assets_page.rs` et `asset_page.rs` (chacun avec ses fragments et ses formulaires), `valuations.rs` (les formulaires de valorisation), `views.rs` (ce que plusieurs pages partagent) et `reply.rs` (rendu, réponses de formulaire, pannes, page introuvable).
+Les handlers sont rangés par page dans `crates/server/src/handlers/` : `dashboard.rs`, `assets_page.rs` et `asset_page.rs` (chacun avec ses fragments et ses formulaires), `valuations.rs` (les formulaires de valorisation), `transactions.rs` (les opérations d'un compte, l'import et leur classement), `categories.rs` (la page Catégories), `budget.rs` (la page Budget), `payments.rs` (la page Paiements), `forecast.rs` (la page Prévisions), `bank.rs` (la page Banque et le retour de la banque), `views.rs` (ce que plusieurs pages partagent) et `reply.rs` (rendu, réponses de formulaire, pannes, page introuvable).
 
 ### Pages composées avec htmx
 
@@ -105,7 +112,7 @@ Quand une page affiche des informations venant de cas d'usage différents, le **
 
 ## Limites connues
 
-- **Pas de transaction entre providers.** `DeleteAsset` supprime les valorisations puis l'actif en deux écritures : si la seconde échoue, l'actif reste sans historique. Accepté pour une application locale à un seul utilisateur. Évolution prévue : une unité de travail transactionnelle, que le cas d'usage ouvre et valide, plutôt qu'un `ON DELETE CASCADE` qui cacherait la suppression dans le schéma.
+- **Pas de transaction entre providers.** `DeleteCategory` retire la catégorie des transactions et des paiements prévus, supprime ses règles et ses enveloppes puis la catégorie, avec la même limite. `DeleteAsset` supprime le réglage de l'épargne si l'actif en est la destination, ses paiements prévus, les valorisations, les transactions puis l'actif en plusieurs écritures : si la dernière échoue, l'actif reste sans historique. De même, `ImportTransactions` écrit les transactions (toutes ou aucune, dans une transaction de base de données) puis la valorisation du solde : si celle-ci échoue, les opérations sont importées et le solde est à saisir à la main. Accepté pour une application locale à un seul utilisateur. Évolution prévue : une unité de travail transactionnelle, que le cas d'usage ouvre et valide, plutôt qu'un `ON DELETE CASCADE` qui cacherait la suppression dans le schéma.
 
 ## Ajouter une fonctionnalité
 

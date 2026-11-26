@@ -6,7 +6,7 @@ Application des [fondations](foundations.md) aux écrans de worthfold. Templates
 
 - Fond `surface`, police Roboto Flex, texte `body-large`.
 - Une colonne centrée (`max-w-3xl`), cartes empilées avec `gap-4`.
-- En-tête : le nom « worthfold » (`title-large`, `primary`, lien vers le tableau de bord) et la **navigation** : deux destinations en pilules (« Tableau de bord », « Actifs »), de 48 px de haut. La page active porte l'indicateur `secondary-container` et `aria-current="page"` ; la page d'un actif active « Actifs ».
+- En-tête : le nom « worthfold » (`title-large`, `primary`, lien vers le tableau de bord) et la **navigation** : quatre destinations en pilules (« Tableau de bord », « Actifs », « Budget », « Prévisions ») et un menu « Réglages » (« Paiements », « Banque », « Catégories », « Compte »), de 48 px de haut. Le menu est un `details` : il marche sans JavaScript, et sa pilule est active quand la page courante en fait partie. La page active porte l'indicateur `secondary-container` et `aria-current="page"` ; la page d'un actif active « Actifs ».
 
 ## Consulter, parcourir, agir
 
@@ -51,13 +51,82 @@ De haut en bas, l'action principale juste sous la valeur actuelle :
 
 1. **Retour** « ← Tous les actifs » (l'onglet « Actifs » reste actif).
 2. **En-tête** (`partials/asset_header.html`, `xl-increased`) : le type (`label-large`), le nom (`headline-small`), la dernière valeur en grand (`display-medium`, `error` si négative), sa date et sa fraîcheur.
+   Pour un **compte bancaire**, une ligne « Opérations du compte › » suit l'en-tête et mène à la page des opérations.
 3. **Nouvelle valorisation** : montant, avec le symbole de la devise dans le libellé (« Montant (€) », « Capital restant dû (€) » pour un prêt) et date (limitée au jour même), avec des libellés visibles, et le bouton plein « Enregistrer ». Un refus s'affiche sous le formulaire et la saisie reste ; un succès vide le montant, met à jour l'en-tête et l'historique sans recharger la page, et confirme dans la snackbar.
 4. **Historique** (`partials/asset_history.html`) : toutes les valorisations, de la plus récente à la plus ancienne. Chacune montre sa date, sa valeur et l'écart avec la précédente (« +2 450,00 € », en `error` s'il est négatif, « inchangée » s'il est nul). Pour un prêt, un remboursement donne un écart positif : la dette baisse, le patrimoine monte. Vide : « Aucune valorisation pour l'instant : saisis la première ci-dessus ».
    - Chaque ligne a un bouton texte « Supprimer » (`btn-text-error`, nom accessible « Supprimer la valorisation du … ») pour corriger une saisie erronée, avec une confirmation qui cite la date et le montant. Un refus s'affiche en haut de l'historique ; un succès met à jour l'en-tête, l'historique et les sections de gestion sans recharger la page.
 5. **Modifier le nom ou le type** (`partials/asset_manage.html`) : section repliée (`<details>`, secondaire). Quand plusieurs devises sont proposées, la devise s'y ajoute (« Modifier le nom, le type ou la devise ») ; une devise figée s'affiche alors en texte, avec la raison. Après un succès, la page se recharge avec la confirmation.
-6. **Supprimer** : ce qui sera perdu, chiffré et accordé (« son historique : 3 valorisations », « aucune valorisation »), et bouton `btn-outlined-error`, avec confirmation par `hx-confirm` (voir [Web](../tech/web.md#sécurité)). Après un succès, retour à la page Actifs, avec la confirmation dans la snackbar.
+6. **Supprimer** : ce qui sera perdu, chiffré et accordé (« son historique : 3 valorisations », « aucune valorisation »), et bouton `btn-outlined-error`, avec confirmation par `hx-confirm` (voir [Web](../tech/web.md#htmx)). Après un succès, retour à la page Actifs, avec la confirmation dans la snackbar.
 
 En-tête, historique et sections de gestion se rechargent ensemble après une valorisation : le nombre de valorisations annoncé et le verrou de la devise restent justes sans recharger la page.
+
+## Opérations d'un compte (`transactions_page.html`)
+
+Page d'un compte bancaire, accessible depuis la page de l'actif ; l'onglet « Actifs » reste actif. De haut en bas :
+
+1. **Retour** « ← nom du compte ».
+2. **Importer un relevé** : le fichier CSV, le solde après la dernière opération (facultatif) et le bouton plein « Importer ». Pendant l'envoi, le bouton est désactivé (htmx). Un succès recharge la page avec la confirmation dans la snackbar (« 2 opérations importées. Solde de 1 300,00 € enregistré. ») ; un refus s'affiche sous le formulaire, ou en haut de la page sans JavaScript. Règles : [Transactions](../specs/transactions.md).
+3. **En attente** (seulement s'il y en a) : ce que la banque annonce sans l'avoir comptabilisé, avec leur somme en titre et une phrase qui dit qu'elles ne comptent pas dans le budget. Informatif : pas de catégorie à choisir.
+4. **Liste** : le nombre d'opérations en titre, puis une ligne par opération (date, libellé, montant en `error` si c'est une dépense), de la plus récente à la plus ancienne. Vide : « Aucune opération pour l'instant : importe ton premier relevé ci-dessus ».
+
+## Catégories (`categories_page.html`)
+
+Page du menu Réglages. De haut en bas :
+
+1. **Titre**, puis un message d'erreur éventuel (refus d'un formulaire, ou d'une suppression).
+2. Sans aucune catégorie : **Ajouter les catégories usuelles** (bouton plein), qui explique à quoi servent les catégories. Sinon, la **liste** : chaque catégorie avec son sens et un bouton texte « Supprimer » (confirmation qui annonce que les opérations redeviennent sans catégorie), et dessous ses règles (« Libellé contenant « carrefour » », avec leur propre bouton « Supprimer »).
+3. **Nouvelle règle** (une fois des catégories créées) : le motif, la catégorie, le bouton plein « Ajouter la règle ». Dessous, le bouton tonal **Classer les opérations**, avec sa phrase d'explication : il applique les règles aux opérations sans catégorie, sans toucher à celles classées à la main.
+4. **Nouvelle catégorie** : le nom, le sens, le bouton plein « Ajouter ».
+
+Sur la page des opérations d'un compte, chaque ligne porte désormais, sous la date, le libellé et le montant, une liste de catégories (présélectionnée) et un bouton tonal « Classer ». Sans catégorie créée, la page renvoie vers la page Catégories.
+
+## Budget (`budget_page.html`)
+
+Un mois à la fois, dans l'adresse. De haut en bas :
+
+1. **Navigation de mois** : « ← Mois précédent » et, sauf pour le mois en cours, « Mois suivant → » (boutons texte, sans JavaScript), puis le titre « Budget · octobre 2026 ».
+2. **Ce qu'il reste du mois** (`xl-increased`) : le résultat en grand (`display-medium`, `error` s'il est négatif), puis les revenus et les dépenses. Si des opérations n'ont pas de catégorie, une phrase le dit (couleur `tertiary`) et renvoie vers les comptes.
+3. **Enveloppes** : une ligne par catégorie avec « dépensé sur plafond », la jauge (`meter`, `tertiary` quand l'enveloppe est proche, `error` quand elle est dépassée), l'état écrit (« Reste 120,00 € », « Dépassé de 50,00 € », « · proche du plafond ») et un bouton texte « Retirer » avec confirmation. Vide : « Aucune enveloppe ce mois-là ».
+4. **Fixer un plafond** : la catégorie de dépense, le plafond, le bouton plein « Fixer ». Il précise que le plafond vaut à partir de ce mois.
+5. **Épargne** (`xl-increased`) : la suggestion en titre (« Verse 500,00 € sur Livret A » ou « Rien à verser ») et son explication, les soldes (comptes courants, livret), le **matelas** et d'où il vient (« évalué : le mois le plus cher des 3 derniers mois complets… » ou « fixé par toi »), puis le rappel que worthfold ne déplace pas d'argent. Le réglage (livret, plafond, matelas facultatif) est dans une section repliée, ouverte tant que rien n'est réglé. Règles : [Budget et épargne](../specs/budget.md).
+
+## Paiements (`payments_page.html`)
+
+Page du menu Réglages. De haut en bas :
+
+1. **Titre**, puis un message d'erreur éventuel.
+2. **Repéré dans tes relevés** (seulement s'il y a des suggestions, et alors en premier : c'est le chemin le plus court) : le nom, le sens, le compte, le rythme, le montant et le nombre d'opérations qui l'ont fait repérer, avec un bouton tonal « Ajouter ».
+3. **Échéances** : le calendrier, une ligne par échéance (date, nom, état, montant), précédé d'une phrase qui dit ce qu'il montre. L'état est écrit : « Prévu », « Constaté : 700,00 € » (en `primary`), « Manquant : rien n'est arrivé » (en `error`), « Sautée » (barrée) ; un montant estimé s'affiche « ≈ 1 850,00 € ± 150,00 € ». Une échéance non constatée a une section repliée « Corriger cette échéance » : Sauter, Fixer un autre montant, Rétablir.
+4. **Mes paiements** : chaque paiement décrit en toutes lettres (« Tous les 3 mois, le 10, à partir de février 2026 », « Observé d'après tes relevés… », « révision estimée de 2 % chaque 15 octobre »), une section repliée « Nouveau montant » (palier : date, montant, marge) et un bouton texte « Supprimer » avec confirmation.
+5. **Ajouter un paiement** : un formulaire en blocs (*Quoi*, *Quand*, *Combien*), ouvert tant qu'il n'y a aucun paiement. Le chemin courant (un paiement mensuel d'un montant fixe) ne montre que les champs de base. Ce qui est rare est replié : « Précisions selon le rythme choisi » (tous les N mois, certains mois, une seule fois), « Montant variable ou révisé chaque année » et « Limiter dans le temps ». Les zones repliées sont dans le formulaire : elles sont envoyées même fermées, et la page n'a pas besoin de JavaScript. Règles : [Paiements prévus](../specs/payments.md).
+
+## Prévisions (`forecast_page.html`)
+
+Page en lecture seule. De haut en bas :
+
+1. **Solde d'aujourd'hui** des comptes courants.
+2. **Alertes** (`bg-error-container`, `role="alert"`) : découvert attendu ou possible, passage sous le matelas.
+3. **Trois horizons** (3, 6 et 12 mois) : solde attendu, fourchette prudent–favorable, patrimoine net.
+4. **Évolution prévue** : la courbe du solde attendu (trait plein) et la fourchette du prudent au favorable (pointillés et bande), du jour à la fin de la période. C'est le même SVG que le graphique du tableau de bord (`chart.rs`) ; chaque point donne sa date, son solde et sa fourchette au survol.
+5. **Sur quoi ça repose** : les hypothèses en phrases, juste sous la courbe, car elles conditionnent la lecture des chiffres.
+6. **Détail mois après mois**, zone repliée : solde attendu, mouvement du mois, fourchette ; « sous le matelas » et « à découvert » sont dits en toutes lettres, pas par la seule couleur. Règles : [Prévisions](../specs/forecast.md).
+
+## Banque (`bank_page.html`)
+
+1. Sans configuration, une carte explique les variables à renseigner ; le reste de la page est masqué.
+2. **Une carte par banque connectée** : les jours de consentement restants (en `text-tertiary` à 14 jours ou moins, en `text-error` une fois expiré, toujours dits en toutes lettres), puis ses comptes, chacun avec un sélecteur « Reçoit les opérations dans » et sa date de dernière lecture, et « Retirer la connexion » (confirmation htmx).
+3. **Lire les opérations**, visible dès qu'un compte est rattaché : « Lire maintenant » (bouton plein) et « Relire les 90 derniers jours » (tonal). Pendant la lecture, le bouton est désactivé et « Lecture en cours… » s'affiche ; le résultat revient dans la snackbar, un échec sous la carte.
+4. **Connecter ou renouveler une banque** : nom et pays. Le champ « Banque » propose les banques du pays saisi (`datalist` rechargée par htmx quand le pays change) ; on peut aussi taper un nom, et sans JavaScript c'est le seul moyen. Règles : [Connexion bancaire](../specs/bank.md).
+
+## Connexion, première configuration et compte
+
+Les pages **Connexion** et **Première configuration** n'ont pas de navigation (on n'est pas encore entré) : une carte centrée (`rounded-xl-increased`, `max-w-md`), le nom « worthfold », un titre, les champs et un bouton plein.
+
+- **Connexion** : un champ « Mot de passe » (focus à l'ouverture) et « Se connecter ». Un refus s'affiche au-dessus du formulaire (`bg-error-container`, `role="alert"`) ; il ne dit jamais ce qui manque (« Mot de passe incorrect. »). Après trop d'essais, il dit combien d'attente.
+- **Première configuration** (seulement tant qu'aucun mot de passe n'existe) : le code de configuration affiché dans la console, le mot de passe et sa confirmation, avec l'exigence de longueur écrite. Une fois enregistré, l'utilisateur est connecté.
+- **Compte** (menu Réglages) : « Changer le mot de passe » (actuel, nouveau, confirmation) et « Se déconnecter ». Le changement ferme les autres sessions, et le dit.
+
+Tous ces formulaires sont des envois classiques (sans htmx) : une redirection, et la confirmation éventuelle dans la snackbar.
 
 ## Graphique
 

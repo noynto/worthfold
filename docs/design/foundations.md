@@ -1,13 +1,15 @@
-# Design system : fondations
+# Interface utilisateur : design system et fondations
+
+Ce document est la référence de l'**interface** : le design system Material 3 Expressive appliqué à worthfold (couleurs, typographie, formes, mouvement, composants). Le comportement est décrit dans [Expérience utilisateur](ux.md), l'application écran par écran dans [Écrans](screens.md), la protection des données dans [Sécurité](../tech/security.md).
 
 worthfold suit **Material 3 Expressive**, sans en utiliser les composants : pas de bibliothèque de composants ni de composant web JavaScript, seulement du HTML rendu par askama, des classes **Tailwind CSS v4** compilées au build, et htmx pour les mises à jour partielles. Material fournit les règles (rôles de couleur, échelles, états, accessibilité) et les valeurs officielles ; la marque fournit la couleur source. Application aux écrans : [Écrans](screens.md).
 
 Principes :
 
 - **Minimalisme** : un élément ne s'ajoute que s'il sert la lecture ou l'action.
-- **Jetons uniquement** : couleurs, tailles de texte, arrondis et courbes de mouvement viennent des jetons ci-dessous, déclarés dans `crates/server/styles/app.css` (`@theme`). Les palettes et échelles par défaut de Tailwind sont désactivées : `bg-red-600`, `text-sm` ou `rounded-2xl` de Tailwind n'existent pas ici, et jamais de valeur arbitraire (`text-[13px]`, `rounded-[20px]`), sauf un rapport d'aspect.
+- **Jetons uniquement** : couleurs, tailles de texte, arrondis et courbes de mouvement viennent des jetons ci-dessous, déclarés dans `crates/server/styles/app.css` (`@theme`). Les palettes et échelles par défaut de Tailwind sont désactivées : `bg-red-600`, `text-sm` ou `rounded-2xl` de Tailwind n'existent pas ici, et jamais de valeur arbitraire de **style** (`text-[13px]`, `rounded-[20px]`, `bg-[#0f766e]`). Deux exceptions de **mise en page**, qui ne sont pas des jetons : un rapport d'aspect (`aspect-[720/260]`) et les colonnes d'une grille de formulaire (`md:grid-cols-[1fr_1fr_auto]`).
 - **Accessible par défaut** : contrastes WCAG AA, focus toujours visible, cibles de 48 px.
-- **Le style sans JavaScript** : Tailwind est un exécutable autonome qui produit une feuille de style au build ; même les ressorts Expressive sont en CSS. Le seul JavaScript de la page est htmx, pour les échanges avec le serveur.
+- **Le style sans JavaScript** : Tailwind est un exécutable autonome qui produit une feuille de style au build ; même les ressorts Expressive sont en CSS. Le JavaScript de la page est htmx, pour les échanges avec le serveur, et `app.js` (une quinzaine de lignes : remettre un formulaire à zéro après un succès).
 
 ## Sources des valeurs
 
@@ -161,3 +163,21 @@ Déclarés avec `@utility` dans `app.css`, à utiliser tels quels :
 - Grille de 4 px de Tailwind. Espacement entre cartes : `gap-4` ; marges intérieures : `p-4 md:p-6`, `p-6 md:p-10` pour les grandes surfaces.
 - Une colonne centrée, `max-w-3xl`, marges latérales `px-4`.
 - Deux tailles d'écran : mobile (empilement) et à partir de 768 px (`md:`, colonnes).
+
+## Audit de l'interface (26 novembre 2026)
+
+Relevé sur tous les templates (`crates/server/templates`) avec les règles ci-dessus.
+
+Conforme :
+
+- **Jetons** : aucune couleur, taille de texte ou arrondi de Tailwind hors jetons, aucune valeur arbitraire de style, aucun `style=` en ligne dans les templates.
+- **Couleur seule** : un état n'est jamais porté par la couleur seule (enveloppe dépassée, paiement manquant, consentement expiré : le texte l'écrit aussi).
+- **Contrastes** : toutes les combinaisons utilisées sont dans le tableau mesuré (texte, discret, erreur, signalement `tertiary`).
+- **Mouvement** : `prefers-reduced-motion` est respecté dans `app.css`.
+
+À corriger ou à décider :
+
+- [x] **Deux `hx-on::after-request`** (`assets_page.html`, `asset_page.html`) : du JavaScript dans un attribut, que htmx évalue. Il empêche une CSP stricte (voir [Sécurité](../tech/security.md#écarts-connus)). → Remplacés par `assets/js/app.js` et deux attributs `data-*`.
+- [x] **Style du graphique** : `chart.rs` insère un bloc `<style>` dans la page, ce qui empêche aussi une CSP sans `unsafe-inline`. → Règles déplacées dans `app.css`.
+- [x] **Prévisions sans graphique** → courbe du scénario attendu et de sa fourchette, avec le même module SVG que le tableau de bord.
+- [x] **Pages non vérifiées sur écran réel** → captures à 390 px de large dans Chromium : mise en page correcte ; un défaut corrigé (`select.field` en `appearance: base-select` : le texte collait en haut, `align-items: center` ajouté). Une vérification sur un vrai téléphone reste à faire.

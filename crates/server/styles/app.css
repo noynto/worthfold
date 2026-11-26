@@ -203,6 +203,20 @@
   @apply btn px-3 text-error;
 }
 
+/* Jauge d'une enveloppe : un <progress> natif (les lecteurs d'écran en annoncent la valeur), coloré par jetons.
+ * L'état (« Dépassé de 50 € ») est aussi écrit : la couleur ne porte jamais seule l'information. */
+@utility meter {
+  @apply block h-2 w-full overflow-hidden rounded-full;
+  appearance: none;
+  border: 0;
+  background-color: var(--color-surface-container-highest);
+  &::-webkit-progress-bar { background-color: var(--color-surface-container-highest); }
+  &::-webkit-progress-value { background-color: var(--meter-color, var(--color-primary)); }
+  &::-moz-progress-bar { background-color: var(--meter-color, var(--color-primary)); }
+}
+@utility meter-near { --meter-color: var(--color-tertiary); }
+@utility meter-over { --meter-color: var(--color-error); }
+
 /* Champ « outlined » M3 : contour `outline` (contraste ≥ 3:1), coins xs, contour `primary` de 2 px au focus. */
 @utility field {
   @apply min-h-12 w-full min-w-0 rounded-xs border border-outline bg-transparent px-4 text-body-large text-on-surface;
@@ -245,7 +259,8 @@
     select.field::picker(select) {
       appearance: base-select;
     }
-    select.field { background-image: none; }
+    /* Le champ devient un conteneur flex : sans `align-items`, le texte colle en haut d'un champ de 48 px. */
+    select.field { background-image: none; align-items: center; }
     select.field::picker-icon {
       color: var(--arrow);
       transition: rotate 150ms var(--ease-effects);
@@ -287,3 +302,32 @@
 @utility field-label {
   @apply grid gap-1 text-label-medium text-on-surface-variant;
 }
+
+/* Graphique (`chart.rs`) : les règles sont ici, pas dans le SVG, pour que la page n'ait aucun style en ligne.
+   Servi seul (sans JavaScript), le SVG charge cette feuille lui-même : sans `color-scheme`, il aurait un fond clair
+   opaque en thème sombre. Les classes sont préfixées `chart-` (`.grid` de Tailwind existe déjà). */
+.chart { color-scheme: light dark; font-family: var(--font-sans); font-size: 12px; }
+/* Les traits gardent leur épaisseur quelle que soit la largeur d'affichage. */
+.chart-grid, .chart-zero, .chart-curve { vector-effect: non-scaling-stroke; }
+.chart-grid { stroke: var(--color-outline-variant); stroke-width: 1; }
+.chart-zero { stroke: var(--color-outline); stroke-dasharray: 4 4; }
+.chart-label { fill: var(--color-on-surface-variant); font-variant-numeric: tabular-nums; }
+.chart-curve { fill: none; stroke: var(--color-primary); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.chart-area { fill: var(--color-primary); opacity: .12; }
+/* Bornes de la fourchette d'une projection : pointillés, pour les distinguer du solde attendu. */
+.chart-bound { fill: none; stroke: var(--color-primary); stroke-width: 1; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+.chart-dot { fill: var(--color-primary); stroke: var(--color-surface-container-low); stroke-width: 2; transition: r 360ms var(--ease-spatial-fast); }
+.chart-dot:hover { r: 7; }
+.chart-message { fill: var(--color-on-surface-variant); font-size: 14px; }
+/* Sur téléphone, le graphique est réduit de moitié : le texte et les points sont agrandis d'autant
+   pour rester lisibles (environ 11 px affichés). */
+@media (max-width: 560px) {
+  .chart-label { font-size: 22px; }
+  .chart-message { font-size: 26px; }
+  .chart-dot { r: 8; stroke-width: 3; }
+  .chart-dot:hover { r: 11; }
+}
+
+/* Indicateur d'attente de htmx (`includeIndicatorStyles` est désactivé : htmx n'injecte aucun style en ligne). */
+.htmx-indicator { opacity: 0; transition: opacity 200ms var(--ease-effects); }
+.htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }

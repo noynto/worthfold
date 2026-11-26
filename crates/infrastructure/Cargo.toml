@@ -10,10 +10,23 @@ anyhow = "1.0.104"
 asset = { package = "worthfold-asset", path = "../asset" }
 async-trait = "0.1.92"
 chrono = "0.4.45"
+recurrence = { package = "worthfold-recurrence", path = "../recurrence" }
 shared = { package = "worthfold-shared", path = "../shared" }
-sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "sqlite", "macros", "migrate"] }
+sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "postgres", "macros", "migrate", "chrono", "rust_decimal"] }
+budget = { package = "worthfold-budget", path = "../budget" }
+category = { package = "worthfold-category", path = "../category" }
+transaction = { package = "worthfold-transaction", path = "../transaction" }
 valuation = { package = "worthfold-valuation", path = "../valuation" }
+jsonwebtoken = { version = "12.0.0", features = ["rust_crypto"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+rust_decimal = "1.43.0"
+tracing = "0.1.44"
+bank = { package = "worthfold-bank", path = "../bank" }
+auth = { package = "worthfold-auth", path = "../auth" }
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json", "query"] }
+argon2 = "0.6.0"
 
 [dev-dependencies]
-rust_decimal = "1.43.0"
-tokio = { version = "1.54.1", features = ["macros", "rt"] }
+tokio = { version = "1.54.1", features = ["macros", "rt", "net"] }
+axum = "0.8.9"

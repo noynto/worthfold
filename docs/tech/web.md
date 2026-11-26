@@ -11,16 +11,53 @@ Les pages sont rendues côté serveur avec askama ; **htmx** fait les mises à j
 | `GET` | `/fragments/net-worth` | `ReadNetWorth` | Fragment : le patrimoine net (héros) |
 | `GET` | `/fragments/assets` | `ReadNetWorth` | Fragment : la liste des actifs |
 | `GET` | `/fragments/chart` | `ReadNetWorthHistory` | Fragment : le graphique, en SVG intégré |
+| `GET` | `/fragments/banks?country=FR` | `ListBanks` | Fragment : les banques connectables du pays, en `option` d'une `datalist` (vide si le pays est incomplet ou l'agrégateur en panne) |
 | `GET` | `/net-worth/chart.svg` | `ReadNetWorthHistory` | Le graphique en document SVG autonome (page sans JavaScript) |
 | `POST` | `/assets` | `AddAsset` | Voir [Formulaires](#formulaires) |
 | `GET` | `/assets/{id}` | `ReadAsset` | Page d'un actif : valeur, nouvelle valorisation, historique, modification, suppression (page « Actif introuvable », 404, si l'actif n'existe pas) |
 | `GET` | `/fragments/assets/{id}` | `ReadAsset` | Fragment : l'en-tête, l'historique et les sections de gestion d'un actif |
 | `POST` | `/assets/{id}` | `UpdateAsset` | Voir [Formulaires](#formulaires) |
 | `POST` | `/assets/{id}/delete` | `DeleteAsset` | Voir [Formulaires](#formulaires) |
+| `GET` | `/assets/{id}/transactions` | `ReadTransactions` | Opérations d'un compte bancaire (les 200 plus récentes) et formulaire d'import (page « Compte introuvable », 404, si l'actif n'existe pas) |
+| `POST` | `/assets/{id}/transactions/{transaction_id}/category` | `CategorizeTransaction` | Classer une opération (liste vide : retirer la catégorie) ; redirige vers la ligne (`#t-{id}`), sans htmx |
+| `GET` | `/login` | — | Page de connexion (sans navigation) ; redirige vers `/setup` tant qu'aucun mot de passe n'existe |
+| `POST` | `/login` | `Login` | Ouvrir une session (cookie `worthfold_session`), puis le tableau de bord ; un refus revient sur `/login?error=` |
+| `GET` | `/setup` | — | Première configuration : code affiché dans la console, mot de passe, confirmation |
+| `POST` | `/setup` | `SetupPassword` | Enregistrer le premier mot de passe et ouvrir la session |
+| `POST` | `/logout` | `Logout` | Fermer la session (côté serveur aussi) et revenir à `/login` |
+| `GET` | `/account` | — | Page Compte : changer le mot de passe, se déconnecter |
+| `POST` | `/account/password` | `ChangePassword` | Changer le mot de passe : ferme toutes les autres sessions |
+| `GET` | `/categories` | `ReadCategories` | Page Catégories : catégories, règles, formulaires d'ajout |
+| `POST` | `/categories` | `AddCategory` | Ajouter une catégorie, sans htmx |
+| `POST` | `/categories/defaults` | `AddDefaultCategories` | Ajouter les catégories usuelles, sans htmx |
+| `POST` | `/categories/{id}/delete` | `DeleteCategory` | Supprimer une catégorie et ses règles |
+| `POST` | `/categories/rules` | `AddCategoryRule` | Ajouter une règle, sans htmx |
+| `POST` | `/categories/rules/{id}/delete` | `DeleteCategoryRule` | Supprimer une règle |
+| `POST` | `/categories/apply` | `ApplyCategoryRules` | Classer les opérations sans catégorie d'après les règles |
+| `GET` | `/bank` | `ReadBankConnections` | Page Banque : consentements, jours restants, comptes à rattacher, formulaire de connexion |
+| `POST` | `/bank/connect` | `StartBankConnection` | Démarrer un consentement : redirige vers la banque |
+| `GET` | `/bank/callback` | `CompleteBankConnection` | Retour de la banque (code et état) ; un refus ou un état inconnu revient sur `/bank` avec un message |
+| `POST` | `/bank/accounts/{uid}/link` | `LinkBankAccount` | Rattacher (ou détacher, avec une valeur vide) un compte de la banque à un compte de worthfold |
+| `POST` | `/bank/sync` | `SyncBankAccounts` | Lire les opérations et soldes des comptes rattachés |
+| `POST` | `/bank/sync-all` | `SyncBankAccounts` (`full`) | Relire les 90 derniers jours, sans tenir compte de la dernière lecture |
+| `POST` | `/bank/{id}/delete` | `DeleteBankConnection` | Retirer un consentement (confirmation htmx) |
+| `GET` | `/forecast` | `ReadForecast` | Page Prévisions : solde et patrimoine projetés à 3, 6 et 12 mois, mois après mois, alertes |
+| `GET` | `/payments` | `ReadPlannedPayments` | Page Paiements : calendrier des échéances, suggestions détectées, paiements, formulaire d'ajout |
+| `POST` | `/payments` | `AddPlannedPayment` | Ajouter un paiement, sans htmx |
+| `POST` | `/payments/suggestions` | `AcceptRecurrenceSuggestion` | Ajouter une suggestion détectée (rythme et montant recalculés côté serveur) |
+| `POST` | `/payments/{id}/delete` | `DeletePlannedPayment` | Supprimer un paiement (confirmation htmx) |
+| `POST` | `/payments/{id}/steps` | `AddAmountStep` | Ajouter un palier de montant |
+| `POST` | `/payments/{id}/occurrences/{date}` | `SetOccurrenceException` | Sauter une échéance, en changer le montant (`action=amount`) ou la rétablir (`action=clear`) |
+| `GET` | `/budget`, `/budget/{mois}` | `ReadBudget` | Page Budget d'un mois (`2026-10`) : synthèse, enveloppes, épargne ; le mois en cours par défaut, page « Mois introuvable » (404) si l'adresse n'est pas un mois |
+| `POST` | `/budget/{mois}/envelopes` | `SetEnvelope` | Fixer un plafond à partir du mois, sans htmx |
+| `POST` | `/budget/{mois}/envelopes/{category_id}/remove` | `SetEnvelope` | Retirer une enveloppe à partir du mois (confirmation htmx) |
+| `POST` | `/budget/{mois}/savings` | `SaveSavingsPlan` | Régler l'épargne : livret, plafond, matelas facultatif, sans htmx |
+| `POST` | `/assets/{id}/transactions/import` | `ImportTransactions` | Import d'un relevé CSV, voir [Import d'un relevé](#import-dun-relevé) |
 | `POST` | `/assets/{id}/valuations` | `RecordValuation` | Voir [Formulaires](#formulaires) |
 | `POST` | `/assets/{id}/valuations/{valuation_id}/delete` | `DeleteValuation` | Voir [Formulaires](#formulaires) |
 | `GET` | `/static/app.css` | — | Feuille de style compilée par Tailwind, embarquée (`no-cache`) |
 | `GET` | `/static/htmx-2.0.11.min.js` | — | htmx, embarqué ; la version est dans le chemin (cache d'un an) |
+| `GET` | `/static/app.js` | — | Le seul script de l'application : remet un formulaire à zéro après un succès (`data-reset-on-success`, `data-clear-on-success`) ; `no-cache` |
 | `GET` | `/static/fonts/roboto-flex-latin.woff2` | — | Police Roboto Flex, embarquée (cache d'un an) |
 | `GET` | toute autre adresse | — | Page « Page introuvable » (404) |
 
@@ -49,6 +86,28 @@ Chaque formulaire a `method="post"`, `action` et `hx-post` vers la même route, 
 **Message flash** (`flash.rs`) : quand une action redirige, sa confirmation la suit dans un cookie de courte durée (`worthfold_flash`, une minute, `HttpOnly`, `SameSite=Strict`, valeur encodée). La page d'arrivée l'affiche dans sa snackbar et efface le cookie dans la même réponse : le message ne s'affiche qu'une fois, ne reste pas dans l'adresse et ne revient pas au rechargement. Les pages qui reçoivent des redirections le lisent : la page Actifs et la page d'un actif.
 
 Une valorisation ne recharge donc jamais la page : seuls le total, la liste et le graphique sont redemandés. Pendant l'envoi, `hx-disabled-elt="find button"` désactive le bouton du formulaire.
+
+## Catégories
+
+Les formulaires de la page Catégories et le classement d'une opération sont des formulaires classiques, **sans htmx** : un succès redirige avec une confirmation en message flash, un refus rouvre la page avec `?error=`. Les deux suppressions (catégorie, règle) utilisent htmx pour demander une confirmation (`hx-confirm`) ; un refus s'affiche sous le titre de la page (`#error-categories`) et un succès redirige (`HX-Redirect`).
+
+## Paiements
+
+Le formulaire d'ajout est classique, **sans htmx** : tous les champs arrivent en texte (`PaymentForm`) et le handler les lit en français (`parse_form`) avant d'appeler le cas d'usage ; un champ répété est refusé par la désérialisation (`serde_urlencoded`). Le rythme choisi décide des champs lus : les autres sont ignorés. La plage de mois d'« certains mois de l'année » peut passer le 31 décembre. La suppression d'un paiement demande confirmation par htmx (`hx-confirm`).
+
+## Budget
+
+Le mois est dans l'adresse (`/budget/2026-10`) : un refus de formulaire revient sur le même mois. Les formulaires sont classiques, **sans htmx** (succès : redirection avec message flash ; refus : `?error=`), sauf le retrait d'une enveloppe, qui demande confirmation par `hx-confirm`. Les navigations vers le mois précédent et suivant sont de simples liens (le mois suivant n'est proposé que jusqu'au mois en cours).
+
+La jauge d'une enveloppe est un `<progress>` natif, coloré par les classes `meter`, `meter-near` et `meter-over` (`app.css`).
+
+## Import d'un relevé
+
+Le formulaire d'import (`transactions_page.html`) envoie le fichier en `multipart/form-data` (fonctionnalité `multipart` d'axum) et **n'utilise pas htmx** : il marche sans JavaScript, et répond comme un formulaire sans htmx (voir ci-dessus) : `303` vers la page du compte avec la confirmation en message flash, ou avec `?error=` en cas de refus.
+
+- Les champs sont `statement` (le fichier) et `closing_balance` (le solde après la dernière opération, facultatif).
+- Le corps est limité à 2 Mo (limite par défaut d'axum), très au-dessus d'un relevé mensuel.
+- Le fichier est lu en UTF-8 ; s'il n'est pas valide, en Windows-1252, l'encodage de nombreuses banques françaises (`decode_statement`).
 
 ## Erreurs
 
@@ -84,18 +143,19 @@ La mise en forme est de la présentation : le domaine garde des valeurs exactes 
 `crates/server/src/chart.rs` dessine l'évolution du patrimoine en SVG, côté serveur, sans bibliothèque :
 
 - `render` produit un `<svg>` à intégrer : le fragment `/fragments/chart` le place dans la page, qui fournit la feuille de style ; les infobulles (date et total exact au survol d'un point) fonctionnent ;
-- `standalone` en fait un document autonome pour `/net-worth/chart.svg`, qui charge lui-même `/static/app.css` ;
+- `standalone` en fait un document autonome pour `/net-worth/chart.svg`, qui charge lui-même `/static/app.css` ; les règles `chart-*` sont dans cette feuille, le SVG n'embarque aucun `<style>` ;
 - ses styles deviennent globaux une fois intégrés : toutes ses classes sont préfixées `chart-` (Tailwind a déjà une classe `grid`) ;
 - la courbe est **en escalier**, parce qu'entre deux saisies le patrimoine vaut la dernière valeur connue (voir [Patrimoine net](../specs/net-worth.md)) ;
 - les graduations sont « rondes » (1, 2 ou 5 × 10ⁿ), environ cinq par graphique, avec une ligne pointillée pour le zéro quand il est dans l'échelle.
 
+## Authentification
+
+Un seul cas d'usage répond à la question « suis-je connecté ? » : `CheckSession`, appelé par le middleware `auth.rs`, **après** la garde des requêtes. Sans session valide, tout mène à `/login` (ou à `/setup` tant qu'aucun mot de passe n'existe), sauf `/static/`, `/login` et `/setup`. Une requête htmx sans session reçoit `401` avec `HX-Redirect: /login` : elle ne peut pas suivre une redirection de page. Une session ouverte écarte de `/login` et `/setup`. Le cookie, ses attributs et ses limites : [Sécurité](security.md#authentification).
+
+## En-têtes et contenu de page
+
+Toute réponse porte une CSP stricte, `nosniff`, `X-Frame-Options`, `Referrer-Policy` et, hors `/static/`, `Cache-Control: no-store` (`headers.rs`). Conséquences pour les templates : aucun `<script>` ni `<style>` en ligne, aucun attribut `style=`, `onclick=` ou `hx-on` (htmx est configuré sans évaluation de code ni style injecté). Un comportement qui demande du script va dans `assets/js/app.js`, par attribut `data-*`. Un test (`les_pages_n_ont_ni_script_ni_style_en_ligne`) le vérifie sur les pages.
+
 ## Sécurité
 
-- **Écoute locale uniquement** (`127.0.0.1`) : les données sont personnelles et l'application n'a pas encore d'authentification. Ne pas l'exposer sur un réseau en l'état.
-- **Garde des requêtes** (`guard.rs`, devant toutes les routes) : écouter en local ne suffit pas, car une page d'un autre site ouverte dans le même navigateur peut appeler le serveur local. Le CORS n'y change rien : il empêche de *lire* une réponse, pas d'*envoyer* un formulaire. Deux règles, toute violation répond 403 et est journalisée :
-  - **`Host` local** : seuls `127.0.0.1` et `localhost` (avec ou sans port) sont acceptés, même en lecture. Cela bloque le *DNS rebinding*, où un domaine piégé pointe vers 127.0.0.1 pour lire les pages comme s'il était worthfold.
-  - **Modification depuis worthfold** : un `POST` n'est accepté que si `Sec-Fetch-Site` vaut `same-origin` (ou `none`), ou s'il est absent (`curl`). Cela bloque le CSRF, un formulaire d'un autre site qui s'envoie tout seul. Une autre application sur `localhost` (`same-site`) est refusée aussi. Un lien venant d'un autre site (`GET`) reste accepté.
-- **Échappement** : askama échappe toute valeur insérée dans le HTML, y compris les messages d'erreur renvoyés à htmx (`partials/inline_error.html`) : un message qui cite la saisie (« Le montant « … » n'est pas un nombre ») ne peut pas injecter de HTML. Aucun HTML n'est construit par concaténation en Rust.
-- **Seule exception à l'échappement** : `{{ svg|safe }}` dans `partials/chart.html`. Le SVG est produit par `chart.rs`, qui n'y insère que des nombres, des dates et des montants mis en forme, et échappe le texte de `chart::message`. Aucun autre `|safe`.
-- **Pas de valeur dans du JavaScript** : l'échappement HTML ne protège pas une valeur placée dans un script (le navigateur la décode avant de l'exécuter). Le message de suppression passe par `hx-confirm`, dont htmx affiche le texte tel quel sans l'exécuter ; aucun attribut `hx-on` ne contient de valeur.
-- **SQL** : toujours des paramètres `?`, jamais de valeur concaténée.
+Document dédié : [Sécurité](security.md) (modèle de menace, garde des requêtes, échappement, secrets, écarts connus).

@@ -6,12 +6,11 @@ use axum::extract::{Path, State};
 use axum::http::HeaderMap;
 use axum::response::Response;
 use chrono::NaiveDate;
-use rust_decimal::Decimal;
 use serde::Deserialize;
 
 use super::AppState;
 use super::reply::Reply;
-use super::views::{date_label, today};
+use super::views::{date_label, parse_amount, today};
 use crate::format;
 
 // ── POST /assets/{id}/valuations ─────────────────────────────────────────────
@@ -29,9 +28,7 @@ pub async fn post_valuation(
     Form(form): Form<ValuationForm>,
 ) -> Response {
     let reply = Reply::new(&headers, &format!("/assets/{id}"));
-    // Accepte « 1 234,56 » comme « 1234.56 ».
-    let amount = form.amount.replace([' ', '\u{a0}'], "").replace(',', ".");
-    let Ok(amount) = amount.parse::<Decimal>() else {
+    let Some(amount) = parse_amount(&form.amount) else {
         return reply.refusal(&format!(
             "Le montant « {} » n'est pas un nombre : saisis par exemple 1 234,56.",
             form.amount

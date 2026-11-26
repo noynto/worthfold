@@ -1,16 +1,17 @@
 use anyhow::Context;
 use async_trait::async_trait;
 use chrono::NaiveDate;
+use rust_decimal::Decimal;
 use shared::{AssetId, Money, ValuationId};
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, PgPool};
 use valuation::{Valuation, ValuationProvider};
 
 pub struct PersistedValuations {
-    pool: SqlitePool,
+    pool: PgPool,
 }
 
 impl PersistedValuations {
-    pub fn new(pool: SqlitePool) -> Self {
+    pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
 }
@@ -19,9 +20,9 @@ impl PersistedValuations {
 struct ValuationRow {
     id: String,
     asset_id: String,
-    amount: String,
+    amount: Decimal,
     currency: String,
-    valued_on: String,
+    valued_on: NaiveDate,
 }
 
 impl TryFrom<ValuationRow> for Valuation {
@@ -31,8 +32,8 @@ impl TryFrom<ValuationRow> for Valuation {
         Ok(Valuation {
             id: ValuationId::from(row.id),
             asset_id: AssetId::from(row.asset_id),
-            value: Money::new(row.amount.parse()?, row.currency.parse()?),
-            valued_on: NaiveDate::parse_from_str(&row.valued_on, "%Y-%m-%d")?,
+            value: Money::new(row.amount, row.currency.parse()?),
+            valued_on: row.valued_on,
         })
     }
 }
@@ -54,7 +55,7 @@ impl ValuationProvider for PersistedValuations {
 
     async fn read(&self, id: &ValuationId) -> anyhow::Result<Option<Valuation>> {
         sqlx::query_as::<_, ValuationRow>(
-            "SELECT id, asset_id, amount, currency, valued_on FROM valuations WHERE id = ?",
+            "SELECT id, asset_id, amount, currency, valued_on FROM valuations WHERE id = $1",
         )
         .bind(id.as_str())
         .fetch_optional(&self.pool)
@@ -66,13 +67,13 @@ impl ValuationProvider for PersistedValuations {
 
     async fn write(&self, valuation: &Valuation) -> anyhow::Result<()> {
         sqlx::query(
-            "INSERT INTO valuations (id, asset_id, amount, currency, valued_on) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO valuations (id, asset_id, amount, currency, valued_on) VALUES ($1, $2, $3, $4, $5)",
         )
         .bind(valuation.id.as_str())
         .bind(valuation.asset_id.as_str())
-        .bind(valuation.value.amount.to_string())
+        .bind(valuation.value.amount)
         .bind(valuation.value.currency.code())
-        .bind(valuation.valued_on.format("%Y-%m-%d").to_string())
+        .bind(valuation.valued_on)
         .execute(&self.pool)
         .await
         .with_context(|| {
@@ -85,7 +86,7 @@ impl ValuationProvider for PersistedValuations {
     }
 
     async fn delete(&self, id: &ValuationId) -> anyhow::Result<()> {
-        sqlx::query("DELETE FROM valuations WHERE id = ?")
+        sqlx::query("DELETE FROM valuations WHERE id = $1")
             .bind(id.as_str())
             .execute(&self.pool)
             .await
@@ -94,7 +95,7 @@ impl ValuationProvider for PersistedValuations {
     }
 
     async fn delete_of_asset(&self, asset_id: &AssetId) -> anyhow::Result<()> {
-        sqlx::query("DELETE FROM valuations WHERE asset_id = ?")
+        sqlx::query("DELETE FROM valuations WHERE asset_id = $1")
             .bind(asset_id.as_str())
             .execute(&self.pool)
             .await
@@ -108,19 +109,11 @@ impl ValuationProvider for PersistedValuations {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::persistence::{PersistedAssets, connect};
+    use crate::persistence::PersistedAssets;
+    use crate::persistence::testdb::database;
     use asset::{Asset, AssetKind, AssetProvider};
     use rust_decimal::Decimal;
     use shared::Currency;
-
-    /// Une base par test, dans un fichier : `sqlite::memory:` donnerait une base vide par connexion du pool.
-    async fn database() -> (SqlitePool, std::path::PathBuf) {
-        let path = std::env::temp_dir().join(format!("worthfold-test-{}.db", AssetId::generate()));
-        let pool = connect(&format!("sqlite://{}", path.display()))
-            .await
-            .unwrap();
-        (pool, path)
-    }
 
     fn valuation(asset: &Asset, amount: i64) -> Valuation {
         Valuation {
@@ -133,7 +126,8 @@ mod tests {
 
     #[tokio::test]
     async fn ecrit_relit_puis_supprime_une_valorisation() {
-        let (pool, path) = database().await;
+        let Some(db) = database().await else { return };
+        let pool = db.pool.clone();
         let assets = PersistedAssets::new(pool.clone());
         let valuations = PersistedValuations::new(pool);
         let asset = Asset {
@@ -162,52 +156,6 @@ mod tests {
         valuations.delete(&first.id).await.unwrap();
         assert_eq!(valuations.read_all().await.unwrap(), vec![second]);
         assert_eq!(valuations.read(&first.id).await.unwrap(), None);
-        let _ = std::fs::remove_file(path);
-    }
-
-    #[tokio::test]
-    async fn la_migration_garde_l_ordre_des_anciennes_valorisations() {
-        // Reproduit une base d'avant la migration 0002 : identifiants entiers, ordre de saisie 2 puis 10.
-        let path = std::env::temp_dir().join(format!("worthfold-test-{}.db", AssetId::generate()));
-        let url = format!("sqlite://{}", path.display());
-        {
-            use sqlx::sqlite::SqliteConnectOptions;
-            use std::str::FromStr;
-            let options = SqliteConnectOptions::from_str(&url)
-                .unwrap()
-                .create_if_missing(true);
-            let old = SqlitePool::connect_with(options).await.unwrap();
-            let mut migrator = sqlx::migrate!("./migrations");
-            migrator.set_ignore_missing(true);
-            let first_only: Vec<_> = migrator
-                .migrations
-                .iter()
-                .filter(|m| m.version == 1)
-                .cloned()
-                .collect();
-            migrator.migrations = std::borrow::Cow::Owned(first_only);
-            migrator.run(&old).await.unwrap();
-            sqlx::query("INSERT INTO assets VALUES ('a', 'Livret', 'savings_book', 'EUR')")
-                .execute(&old)
-                .await
-                .unwrap();
-            sqlx::query("INSERT INTO valuations (id, asset_id, amount, currency, valued_on) VALUES (2, 'a', '10', 'EUR', '2026-11-09'), (10, 'a', '20', 'EUR', '2026-11-09')")
-                .execute(&old)
-                .await
-                .unwrap();
-            old.close().await;
-        }
-
-        let pool = connect(&url).await.unwrap();
-        let valuations = PersistedValuations::new(pool);
-        let amounts: Vec<_> = valuations
-            .read_all()
-            .await
-            .unwrap()
-            .into_iter()
-            .map(|v| v.value.amount)
-            .collect();
-        assert_eq!(amounts, [Decimal::from(10), Decimal::from(20)]);
-        let _ = std::fs::remove_file(path);
+        db.drop_db().await;
     }
 }

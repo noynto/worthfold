@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Compte · worthfold{% endblock %}
+{% block snackbar %}{% if let Some(flash) = flash %}<p class="snackbar">{{ flash }}</p>{% endif %}{% endblock %}
+{% block content %}
+
+<h1 class="px-2 text-headline-small">Compte</h1>
+
+{% if let Some(error) = error %}
+<p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ error }}</p>
+{% endif %}
+
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="password-title">
+  <h2 id="password-title" class="px-2 pb-1 text-title-medium">Changer le mot de passe</h2>
+  <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Les autres sessions ouvertes (un autre navigateur, un appareil oublié) sont fermées.</p>
+  <form class="grid gap-3 md:grid-cols-2" method="post" action="/account/password">
+    <label class="field-label md:col-span-2">Mot de passe actuel
+      <input class="field" name="current" type="password" required autocomplete="current-password">
+    </label>
+    <label class="field-label">Nouveau mot de passe
+      <input class="field" name="password" type="password" required minlength="{{ min_length }}" autocomplete="new-password">
+    </label>
+    <label class="field-label">Encore une fois
+      <input class="field" name="confirmation" type="password" required minlength="{{ min_length }}" autocomplete="new-password">
+    </label>
+    <button class="btn-filled md:self-start">Changer</button>
+  </form>
+</section>
+
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="logout-title">
+  <h2 id="logout-title" class="px-2 pb-1 text-title-medium">Se déconnecter</h2>
+  <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Ferme la session de ce navigateur. La session reste sinon ouverte {{ session_days }} jours.</p>
+  <form method="post" action="/logout"><button class="btn-tonal">Se déconnecter</button></form>
+</section>
+{% endblock %}

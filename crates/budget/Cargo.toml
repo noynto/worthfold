@@ -1,0 +1,13 @@
+[package]
+name = "worthfold-budget"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = "1.0.104"
+async-trait = "0.1.92"
+chrono = "0.4.45"
+rust_decimal = "1.43.0"
+shared = { package = "worthfold-shared", path = "../shared" }

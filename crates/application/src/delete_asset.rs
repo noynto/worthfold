@@ -1,7 +1,11 @@
 use std::sync::Arc;
 
 use asset::{Asset, AssetProvider};
+use bank::BankConnectionProvider;
+use budget::BudgetProvider;
+use recurrence::RecurrenceProvider;
 use shared::AssetId;
+use transaction::TransactionProvider;
 use valuation::ValuationProvider;
 
 use crate::{NOT_FOUND, UseCaseError};
@@ -9,6 +13,10 @@ use crate::{NOT_FOUND, UseCaseError};
 pub struct DeleteAsset {
     pub asset_provider: Arc<dyn AssetProvider>,
     pub valuation_provider: Arc<dyn ValuationProvider>,
+    pub transaction_provider: Arc<dyn TransactionProvider>,
+    pub budget_provider: Arc<dyn BudgetProvider>,
+    pub recurrence_provider: Arc<dyn RecurrenceProvider>,
+    pub bank_provider: Arc<dyn BankConnectionProvider>,
 }
 
 pub struct Command {
@@ -21,18 +29,29 @@ pub struct Output {
 }
 
 impl DeleteAsset {
-    /// Supprime l'actif et tout son historique de valorisations.
+    /// Supprime l'actif, tout son historique de valorisations et ses transactions.
     pub async fn handle(&self, command: Command) -> Result<Output, UseCaseError> {
         let asset = self
             .asset_provider
             .read(&command.asset_id)
             .await?
             .ok_or_else(|| UseCaseError::refusal(NOT_FOUND))?;
-        // L'historique d'abord : la base refuse une valorisation sans actif.
+        // L'historique et les transactions d'abord : la base refuse une ligne sans actif.
         // Limite connue : les deux suppressions ne sont pas dans une même transaction. Si la seconde
         // échoue, l'actif reste sans historique. Accepté pour l'instant (SQLite local, un seul utilisateur) ;
         // à terme, une unité de travail transactionnelle dans les providers (docs/tech/architecture.md).
+        // Un livret de destination supprimé emporte le réglage de l'épargne (la base refuse un réglage orphelin).
+        if let Some(plan) = self.budget_provider.read_savings_plan().await?
+            && plan.destination == asset.id
+        {
+            self.budget_provider.delete_savings_plan().await?;
+        }
+        self.bank_provider.unlink_asset(&asset.id).await?;
+        self.recurrence_provider
+            .delete_of_account(&asset.id)
+            .await?;
         self.valuation_provider.delete_of_asset(&asset.id).await?;
+        self.transaction_provider.delete_of_asset(&asset.id).await?;
         self.asset_provider.delete(&asset.id).await?;
         Ok(Output { asset })
     }
@@ -45,7 +64,10 @@ mod tests {
     use chrono::NaiveDate;
     use rust_decimal::Decimal;
     use shared::{Currency, Money};
-    use testing::{InMemoryAssets, InMemoryValuations};
+    use testing::{
+        InMemoryAssets, InMemoryBudget, InMemoryRecurrence, InMemoryTransactions,
+        InMemoryValuations,
+    };
     use valuation::Valuation;
 
     #[tokio::test]
@@ -68,6 +90,10 @@ mod tests {
         DeleteAsset {
             asset_provider: assets.clone(),
             valuation_provider: valuations.clone(),
+            transaction_provider: Arc::new(InMemoryTransactions::default()),
+            budget_provider: Arc::new(InMemoryBudget::default()),
+            recurrence_provider: Arc::new(InMemoryRecurrence::default()),
+            bank_provider: Arc::new(testing::InMemoryBank::default()),
         }
         .handle(Command {
             asset_id: "a".into(),
@@ -91,6 +117,10 @@ mod tests {
         let use_case = DeleteAsset {
             asset_provider: Arc::new(InMemoryAssets::default()),
             valuation_provider: Arc::new(InMemoryValuations::default()),
+            transaction_provider: Arc::new(InMemoryTransactions::default()),
+            budget_provider: Arc::new(InMemoryBudget::default()),
+            recurrence_provider: Arc::new(InMemoryRecurrence::default()),
+            bank_provider: Arc::new(testing::InMemoryBank::default()),
         };
         assert!(matches!(
             use_case
@@ -100,5 +130,40 @@ mod tests {
                 .await,
             Err(UseCaseError::Refusal(_))
         ));
+    }
+
+    #[tokio::test]
+    async fn supprimer_le_livret_de_destination_emporte_le_reglage_de_l_epargne() {
+        let book = Asset {
+            id: "livret".into(),
+            name: "Livret A".into(),
+            kind: AssetKind::SavingsBook,
+            currency: Currency::Eur,
+        };
+        let plan = |destination: &str| budget::SavingsPlan {
+            destination: destination.into(),
+            ceiling: Money::new(Decimal::from(22_950), Currency::Eur),
+            cushion_override: None,
+        };
+        let delete = |budget: Arc<InMemoryBudget>| DeleteAsset {
+            asset_provider: Arc::new(InMemoryAssets::with([book.clone()])),
+            valuation_provider: Arc::new(InMemoryValuations::default()),
+            transaction_provider: Arc::new(InMemoryTransactions::default()),
+            budget_provider: budget,
+            recurrence_provider: Arc::new(InMemoryRecurrence::default()),
+            bank_provider: Arc::new(testing::InMemoryBank::default()),
+        };
+        let command = || Command {
+            asset_id: "livret".into(),
+        };
+
+        let linked = Arc::new(InMemoryBudget::with([], Some(plan("livret"))));
+        delete(linked.clone()).handle(command()).await.unwrap();
+        assert_eq!(linked.read_savings_plan().await.unwrap(), None);
+
+        // Le réglage d'un autre livret n'est pas touché.
+        let other = Arc::new(InMemoryBudget::with([], Some(plan("autre"))));
+        delete(other.clone()).handle(command()).await.unwrap();
+        assert!(other.read_savings_plan().await.unwrap().is_some());
     }
 }

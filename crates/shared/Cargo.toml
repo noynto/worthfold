@@ -8,4 +8,4 @@ license.workspace = true
 [dependencies]
 rust_decimal = "1.43.0"
 thiserror = "2.0.21"
-uuid = { version = "1.29.2", features = ["v7"] }
+uuid = { version = "1.29.2", features = ["v7", "v4"] }

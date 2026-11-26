@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Catégories · worthfold{% endblock %}
+{% block snackbar %}{% if let Some(flash) = flash %}<p class="snackbar">{{ flash }}</p>{% endif %}{% endblock %}
+{% block content %}
+
+<h1 class="px-2 text-headline-small">Catégories</h1>
+
+{# Refus d'un formulaire envoyé sans htmx, ou d'une suppression refusée (htmx : sous la liste). #}
+{% if let Some(error) = error %}
+<p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ error }}</p>
+{% endif %}
+<p id="error-categories" role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container empty:hidden"></p>
+
+{% if categories.is_empty() %}
+{# Premier lancement : proposer les catégories usuelles, sans les créer d'office. #}
+<section class="rounded-xl-increased bg-surface-container-low p-6 md:p-10" aria-labelledby="start-title">
+  <h2 id="start-title" class="text-title-large">Aucune catégorie pour l'instant</h2>
+  <p class="mt-2 text-body-medium text-on-surface-variant">Les catégories rangent tes opérations (courses, loyer, salaire…) pour suivre un budget. Pars des catégories usuelles, que tu pourras modifier, ou crée les tiennes ci-dessous.</p>
+  <form class="mt-4" method="post" action="/categories/defaults">
+    <button class="btn-filled">Ajouter les catégories usuelles</button>
+  </form>
+</section>
+{% else %}
+<section class="rounded-xl bg-surface-container-low p-2 md:p-3" aria-labelledby="list-title">
+  <h2 id="list-title" class="px-4 pb-1 pt-3 text-title-medium">Catégories et règles</h2>
+  <p class="px-4 pb-2 text-body-medium text-on-surface-variant">Une règle range automatiquement les opérations dont le libellé contient un mot. Les plafonds par catégorie se fixent sur la page <a href="/budget" class="text-primary hover:underline">Budget</a>.</p>
+  <ul class="divide-y divide-outline-variant">
+    {% for category in categories %}
+    <li class="px-4 py-3">
+      <div class="flex items-center gap-4">
+        <span class="min-w-0 grow">
+          <span class="block break-words text-title-medium">{{ category.name }}</span>
+          <span class="block text-body-medium text-on-surface-variant">{{ category.kind }}</span>
+        </span>
+        <form method="post" action="/categories/{{ category.id }}/delete"
+              hx-post="/categories/{{ category.id }}/delete" hx-target="#error-categories" hx-swap="innerHTML" hx-disabled-elt="find button"
+              hx-confirm="{{ category.delete_confirm }}">
+          <button class="btn-text-error" aria-label="Supprimer la catégorie {{ category.name }}">Supprimer</button>
+        </form>
+      </div>
+      {% if !category.rules.is_empty() %}
+      <ul class="mt-2 flex flex-col gap-1">
+        {% for rule in category.rules %}
+        <li class="flex items-center gap-4 pl-4">
+          <span class="grow break-words text-body-medium">Libellé contenant « {{ rule.pattern }} »</span>
+          <form method="post" action="/categories/rules/{{ rule.id }}/delete"
+                hx-post="/categories/rules/{{ rule.id }}/delete" hx-target="#error-categories" hx-swap="innerHTML" hx-disabled-elt="find button"
+                hx-confirm="{{ rule.delete_confirm }}">
+            <button class="btn-text-error" aria-label="Supprimer la règle {{ rule.pattern }}">Supprimer</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+{# Action principale une fois les catégories créées : une règle, puis le classement des opérations. #}
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="rule-title">
+  <h2 id="rule-title" class="px-2 pb-1 text-title-medium">Nouvelle règle</h2>
+  <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Tout libellé qui contient le motif reçoit la catégorie, à l'import. Si plusieurs règles conviennent, la plus précise (le motif le plus long) l'emporte.</p>
+  <form class="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="/categories/rules">
+    <label class="field-label">Le libellé contient
+      <input class="field" name="pattern" placeholder="carrefour" required maxlength="100">
+    </label>
+    <label class="field-label">Catégorie
+      <select class="field" name="category_id">
+        {% for category in categories %}<option value="{{ category.id }}">{{ category.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <button class="btn-filled">Ajouter la règle</button>
+  </form>
+  <form class="mt-4 flex flex-wrap items-center gap-3 px-2" method="post" action="/categories/apply">
+    <button class="btn-tonal">Classer les opérations</button>
+    <span class="text-body-medium text-on-surface-variant">Applique les règles aux opérations sans catégorie. Celles que tu as classées toi-même ne changent pas.</span>
+  </form>
+</section>
+{% endif %}
+
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="new-title">
+  <h2 id="new-title" class="px-2 pb-4 text-title-medium">Nouvelle catégorie</h2>
+  <form class="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="/categories">
+    <label class="field-label">Nom
+      <input class="field" name="name" required maxlength="60">
+    </label>
+    <label class="field-label">Sens
+      <select class="field" name="kind">
+        {% for kind in kinds %}<option value="{{ kind.0 }}">{{ kind.1 }}</option>{% endfor %}
+      </select>
+    </label>
+    <button class="btn-filled">Ajouter</button>
+  </form>
+</section>
+{% endblock %}

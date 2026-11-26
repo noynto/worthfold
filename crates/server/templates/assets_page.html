@@ -15,8 +15,7 @@
 <section id="add" class="scroll-mt-4 rounded-xl bg-surface-container-low p-4 md:p-6">
   <h2 class="px-2 pb-4 text-title-medium">Ajouter un actif</h2>
   <form class="grid items-end gap-3 {% if currencies.len() > 1 %}md:grid-cols-[2fr_1.5fr_1fr_auto]{% else %}md:grid-cols-[2fr_1.5fr_auto]{% endif %}" method="post" action="/assets"
-        hx-post="/assets" hx-target="#error-add" hx-swap="innerHTML" hx-disabled-elt="find button"
-        hx-on::after-request="if (event.detail.successful) this.reset()">
+        hx-post="/assets" hx-target="#error-add" hx-swap="innerHTML" hx-disabled-elt="find button" data-reset-on-success>
     <label class="field-label">Nom
       <input class="field" name="name" placeholder="Livret A" required maxlength="100">
     </label>

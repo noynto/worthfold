@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Budget · {{ month_label }} · worthfold{% endblock %}
+{% block snackbar %}{% if let Some(flash) = flash %}<p class="snackbar">{{ flash }}</p>{% endif %}{% endblock %}
+{% block content %}
+
+{# Le mois : précédent et suivant en liens, pour naviguer sans JavaScript. #}
+<div class="flex items-center justify-between gap-2">
+  <a href="/budget/{{ previous }}" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large text-primary">← Mois précédent</a>
+  {% if let Some(next) = next %}
+  <a href="/budget/{{ next }}" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large text-primary">Mois suivant →</a>
+  {% endif %}
+</div>
+
+<h1 class="px-2 text-headline-small">Budget · {{ month_label }}</h1>
+
+{% if let Some(error) = error %}
+<p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ error }}</p>
+{% endif %}
+
+{# Ce qui s'est passé : revenus, dépenses, et ce qu'il en reste. #}
+<section class="rounded-xl-increased bg-surface-container-low p-6 md:p-10" aria-labelledby="summary-title">
+  <h2 id="summary-title" class="text-label-large text-on-surface-variant">Ce qu'il reste du mois</h2>
+  <p class="mt-1 text-display-medium font-medium tabular-nums {% if summary.result_negative %}text-error{% endif %}">{{ summary.result }}</p>
+  <dl class="mt-4 grid grid-cols-2 gap-4">
+    <div><dt class="text-label-medium text-on-surface-variant">Revenus</dt><dd class="text-title-medium tabular-nums">{{ summary.income }}</dd></div>
+    <div><dt class="text-label-medium text-on-surface-variant">Dépenses</dt><dd class="text-title-medium tabular-nums">{{ summary.spending }}</dd></div>
+  </dl>
+  {% if let Some(uncategorized) = summary.uncategorized %}
+  <p class="mt-4 text-body-medium text-tertiary">{{ uncategorized }} : les sorties comptent dans les dépenses. <a href="/assets" class="underline">Classe-les</a> depuis la page de ton compte pour un budget juste.</p>
+  {% endif %}
+</section>
+
+{# Les enveloppes : un plafond mensuel par catégorie de dépense. #}
+<section class="rounded-xl bg-surface-container-low p-2 md:p-3" aria-labelledby="envelopes-title">
+  <h2 id="envelopes-title" class="px-4 pb-1 pt-3 text-title-medium">Enveloppes</h2>
+  <p class="px-4 pb-2 text-body-medium text-on-surface-variant">Une enveloppe est un plafond de dépenses pour une catégorie, mois par mois. Les catégories et leurs règles se gèrent sur la page <a href="/categories" class="text-primary hover:underline">Catégories</a>.</p>
+  {% if envelopes.is_empty() %}
+  <p class="px-4 py-4 text-body-medium text-on-surface-variant">Aucune enveloppe ce mois-là : fixe le plafond d'une catégorie ci-dessous.</p>
+  {% else %}
+  <ul class="divide-y divide-outline-variant">
+    {% for envelope in envelopes %}
+    <li class="px-4 py-3">
+      <div class="flex items-baseline gap-4">
+        <span class="min-w-0 grow break-words text-title-medium">{{ envelope.name }}</span>
+        <span class="shrink-0 text-body-medium tabular-nums text-on-surface-variant">{{ envelope.spent }} sur {{ envelope.limit }}</span>
+      </div>
+      <progress class="meter mt-2 {% if envelope.state == "near" %}meter-near{% else if envelope.state == "over" %}meter-over{% endif %}" max="100" value="{{ envelope.gauge }}" aria-label="{{ envelope.name }} : {{ envelope.percent }} % du plafond">{{ envelope.percent }} %</progress>
+      <div class="mt-1 flex items-center gap-4">
+        <span class="grow text-label-medium tabular-nums {% if envelope.state == "over" %}text-error{% else if envelope.state == "near" %}text-tertiary{% else %}text-on-surface-variant{% endif %}">{{ envelope.status }}{% if envelope.state == "near" %} · proche du plafond{% endif %}</span>
+        <form method="post" action="/budget/{{ month_slug }}/envelopes/{{ envelope.category_id }}/remove"
+              hx-post="/budget/{{ month_slug }}/envelopes/{{ envelope.category_id }}/remove" hx-target="#error-budget" hx-swap="innerHTML" hx-disabled-elt="find button"
+              hx-confirm="{{ envelope.remove_confirm }}">
+          <button class="btn-text-error" aria-label="Retirer l'enveloppe {{ envelope.name }}">Retirer</button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <p id="error-budget" role="alert" class="mx-2 mb-2 rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container empty:hidden"></p>
+</section>
+
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="envelope-form-title">
+  <h2 id="envelope-form-title" class="px-2 pb-1 text-title-medium">Fixer un plafond</h2>
+  <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Le plafond s'applique à partir de {{ month_label }} ; les mois précédents gardent le leur.</p>
+  {% if expense_categories.is_empty() %}
+  <p class="px-2 text-body-medium text-on-surface-variant">Il faut d'abord des catégories de dépense : crée-les sur la page <a href="/categories" class="text-primary hover:underline">Catégories</a>.</p>
+  {% else %}
+  <form class="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="/budget/{{ month_slug }}/envelopes">
+    <label class="field-label">Catégorie
+      <select class="field" name="category_id">
+        {% for category in expense_categories %}<option value="{{ category.0 }}">{{ category.1 }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="field-label">Plafond mensuel (€)
+      <input class="field" name="limit" inputmode="decimal" placeholder="400" required>
+    </label>
+    <button class="btn-filled">Fixer</button>
+  </form>
+  {% endif %}
+</section>
+
+{# L'épargne : ce qui reste en fin de mois part sur un livret, sans entamer le matelas. #}
+<section class="rounded-xl-increased bg-surface-container-low p-6 md:p-10" aria-labelledby="savings-title">
+  <h2 id="savings-title" class="text-label-large text-on-surface-variant">Épargne</h2>
+  {% if let Some(savings) = savings %}
+  <p class="mt-1 text-headline-small">{{ savings.headline }}</p>
+  <p class="mt-2 text-body-medium text-on-surface-variant">{{ savings.detail }}</p>
+  {% if !savings.is_current_month %}
+  <p class="mt-2 text-label-medium text-tertiary">Calculé sur ce mois, avec les soldes d'aujourd'hui.</p>
+  {% endif %}
+  <dl class="mt-4 grid gap-4 md:grid-cols-3">
+    <div><dt class="text-label-medium text-on-surface-variant">Comptes courants</dt><dd class="text-title-medium tabular-nums">{{ savings.current_balance }}</dd></div>
+    <div><dt class="text-label-medium text-on-surface-variant">{{ savings.destination }}</dt><dd class="text-title-medium tabular-nums">{{ savings.destination_balance }}</dd></div>
+    <div><dt class="text-label-medium text-on-surface-variant">Matelas de sécurité</dt><dd class="text-title-medium tabular-nums">{{ savings.cushion }}</dd><dd class="text-label-medium text-on-surface-variant">{{ savings.cushion_note }}</dd></div>
+  </dl>
+  <p class="mt-4 text-label-medium text-on-surface-variant">Le matelas de sécurité est la somme que tu gardes sur tes comptes courants avant de mettre de côté. worthfold ne déplace pas d'argent : fais le virement à ta banque, puis importe le relevé. Le virement, classé en « Virement interne », est alors déduit de la suggestion.</p>
+  {% else %}
+  <p class="mt-1 text-body-medium text-on-surface-variant">Choisis le livret qui reçoit ce qu'il reste en fin de mois : worthfold te dit combien verser, sans jamais faire passer ton compte sous un matelas évalué d'après tes dépenses.</p>
+  {% endif %}
+
+  {% if savings_books.is_empty() %}
+  <p class="mt-4 text-body-medium text-on-surface-variant">Ajoute d'abord un livret d'épargne dans les <a href="/assets" class="text-primary hover:underline">actifs</a>.</p>
+  {% else %}
+  <details class="mt-4"{% if savings.is_none() %} open{% endif %}>
+    <summary class="state-layer flex min-h-12 cursor-pointer list-none items-center rounded-md px-2 text-title-medium [&::-webkit-details-marker]:hidden">Régler l'épargne</summary>
+    <form class="mt-3 grid items-end gap-3 md:grid-cols-2" method="post" action="/budget/{{ month_slug }}/savings">
+      <label class="field-label">Livret de destination
+        <select class="field" name="destination">
+          {% for book in savings_books %}<option value="{{ book.0 }}"{% if book.2 %} selected{% endif %}>{{ book.1 }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="field-label">Plafond du livret (€)
+        <input class="field" name="ceiling" inputmode="decimal" value="{{ ceiling_value }}" required>
+      </label>
+      <label class="field-label md:col-span-2">Matelas (€), facultatif : laisse vide pour l'évaluer d'après tes dépenses
+        <input class="field" name="cushion" inputmode="decimal" value="{{ cushion_value }}" placeholder="évalué automatiquement">
+      </label>
+      <button class="btn-filled md:col-span-2 md:justify-self-start">Enregistrer</button>
+    </form>
+  </details>
+  {% endif %}
+</section>
+{% endblock %}

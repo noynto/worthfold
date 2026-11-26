@@ -2,7 +2,14 @@
 
 worthfold n'a pas de planificateur interne. Un traitement périodique est une **tâche one-shot**, sur le modèle d'EOSA : le binaire `worthfold` démarre, assemble les cas d'usage, exécute la tâche, journalise son compte rendu et s'arrête, **sans démarrer le serveur web**. Un planificateur externe la lance : cron, un timer systemd ou un CronJob Kubernetes.
 
-**Aucune tâche n'existe pour l'instant.** Le point d'entrée (`crates/bootstrap/src/main.rs`) a l'emplacement prévu pour elles. Candidates : le relevé mensuel du patrimoine, la récupération des cours, le rappel des valeurs à mettre à jour.
+## Les tâches existantes
+
+| Variable | Tâche | Cas d'usage |
+|---|---|---|
+| `WORTHFOLD_BANK_SYNC_TASK` | Lit les opérations et soldes des comptes bancaires rattachés ([Connexion bancaire](../specs/bank.md)). Code 1 si un compte ou un consentement est en échec. À lancer au plus quelques fois par jour : les banques limitent les lectures | `SyncBankAccounts` |
+| `WORTHFOLD_RESET_PASSWORD_TASK` | Mot de passe oublié : retire le mot de passe et toutes les sessions ([Sécurité](security.md#authentification)). Au démarrage suivant du serveur, la page de première configuration redemande un mot de passe. À lancer à la main, jamais planifiée | `ResetPassword` |
+
+Les tâches vivent dans `crates/bootstrap/src/tasks.rs` (deux pour l'instant : une crate `tasks` séparée n'apportera rien de plus). Candidates : le relevé mensuel du patrimoine, la récupération des cours, le rappel des valeurs à mettre à jour.
 
 ## Fonctionnement
 

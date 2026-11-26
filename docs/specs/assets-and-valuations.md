@@ -58,6 +58,6 @@ Une valorisation est la valeur d'un actif à une date.
 
 ## Supprimer un actif
 
-- La suppression emporte **tout l'historique** de valorisations de l'actif. Elle est définitive ; la page demande une confirmation.
+- La suppression emporte **tout l'historique** de valorisations de l'actif, et ses [transactions](transactions.md) s'il s'agit d'un compte bancaire. Elle est définitive ; la page demande une confirmation.
 - `DeleteAsset` supprime d'abord les valorisations, puis l'actif (la base refuse une valorisation sans actif).
 - Limite connue : ces deux écritures ne sont pas dans une même transaction. Si la seconde échoue, l'actif reste, sans historique.

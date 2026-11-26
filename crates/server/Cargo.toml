@@ -10,17 +10,23 @@ anyhow = "1.0.104"
 application = { package = "worthfold-application", path = "../application" }
 askama = "0.16.1"
 asset = { package = "worthfold-asset", path = "../asset" }
-axum = "0.8.9"
+axum = { version = "0.8.9", features = ["multipart"] }
+budget = { package = "worthfold-budget", path = "../budget" }
+category = { package = "worthfold-category", path = "../category" }
 chrono = "0.4.45"
 rust_decimal = "1.43.0"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_urlencoded = "0.7.1"
+recurrence = { package = "worthfold-recurrence", path = "../recurrence" }
 shared = { package = "worthfold-shared", path = "../shared" }
 tokio = { version = "1.54.1", features = ["macros", "net", "signal"] }
 tracing = "0.1.44"
 valuation = { package = "worthfold-valuation", path = "../valuation" }
 
 [dev-dependencies]
+auth = { path = "../auth", package = "worthfold-auth" }
+bank = { package = "worthfold-bank", path = "../bank" }
+chrono = "0.4.45"
 http-body-util = "0.1.5"
 testing = { package = "worthfold-testing", path = "../testing" }
 tokio = { version = "1.54.1", features = ["macros", "rt"] }

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Banque · worthfold{% endblock %}
+{% block snackbar %}{% if let Some(flash) = flash %}<p class="snackbar">{{ flash }}</p>{% endif %}{% endblock %}
+{% block content %}
+
+<h1 class="px-2 text-headline-small">Banque</h1>
+
+{% if let Some(error) = error %}
+<p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ error }}</p>
+{% endif %}
+
+{% if !configured %}
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6">
+  <h2 class="text-title-medium">Connexion non configurée</h2>
+  <p class="mt-2 text-body-medium text-on-surface-variant">Pour lire tes comptes automatiquement, renseigne <code>WORTHFOLD_ENABLEBANKING_APP_ID</code> et <code>WORTHFOLD_ENABLEBANKING_KEY_PATH</code> (la clé privée de ton application EnableBanking), ainsi que <code>WORTHFOLD_BANK_REDIRECT_URL</code> si le port n'est pas le 3000, puis relance worthfold. L'import de relevés CSV reste disponible sur la page de chaque compte.</p>
+</section>
+{% endif %}
+
+{% for connection in connections %}
+<section class="rounded-xl bg-surface-container-low p-2 md:p-3" aria-labelledby="c-{{ connection.id }}">
+  <div class="px-4 pb-1 pt-3">
+    <h2 id="c-{{ connection.id }}" class="text-title-medium">{{ connection.title }}</h2>
+    <p class="text-body-medium {% if connection.state == "expired" %}text-error{% else if connection.state == "soon" %}text-tertiary{% else %}text-on-surface-variant{% endif %}">{{ connection.validity }}</p>
+  </div>
+  <ul class="divide-y divide-outline-variant">
+    {% for account in connection.accounts %}
+    <li class="px-4 py-3">
+      <p class="text-title-medium">{{ account.label }}</p>
+      <p class="text-label-medium text-on-surface-variant">{{ account.synced }}</p>
+      {% if account.choices.is_empty() %}
+      <p class="mt-2 text-body-medium text-on-surface-variant">Ajoute d'abord un compte bancaire sur la page <a href="/assets" class="text-primary hover:underline">Actifs</a> pour y recevoir ses opérations.</p>
+      {% else %}
+      <form class="mt-2 flex flex-wrap items-end gap-3" method="post" action="/bank/accounts/{{ account.uid }}/link">
+        <label class="field-label grow">Reçoit les opérations dans
+          <select class="field" name="asset_id">
+            <option value=""{% if !account.linked %} selected{% endif %}>— pas encore rattaché —</option>
+            {% for choice in account.choices %}<option value="{{ choice.0 }}"{% if choice.2 %} selected{% endif %}>{{ choice.1 }}</option>{% endfor %}
+          </select>
+        </label>
+        <button class="btn-tonal">Enregistrer</button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="flex flex-wrap gap-2 px-4 py-3">
+    <form method="post" action="/bank/{{ connection.id }}/delete"
+          hx-post="/bank/{{ connection.id }}/delete" hx-target="#error-bank" hx-swap="innerHTML" hx-disabled-elt="find button"
+          hx-confirm="{{ connection.delete_confirm }}">
+      <button class="btn-text-error">Retirer la connexion</button>
+    </form>
+  </div>
+</section>
+{% endfor %}
+
+{% if has_linked %}
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="sync-title">
+  <h2 id="sync-title" class="text-title-medium">Lire les opérations</h2>
+  <p class="mt-1 text-body-medium text-on-surface-variant">Récupère les nouvelles opérations et le solde de chaque compte rattaché. Les opérations déjà connues ne sont pas doublées. Les banques limitent le nombre de lectures sans toi à environ quatre par jour.</p>
+  <form class="mt-3 flex flex-wrap items-center gap-3" method="post" action="/bank/sync"
+        hx-post="/bank/sync" hx-target="#error-bank" hx-swap="innerHTML" hx-disabled-elt="find button">
+    <button class="btn-filled">Lire maintenant</button>
+    <span class="htmx-indicator text-label-large text-on-surface-variant" role="status">Lecture en cours…</span>
+  </form>
+  <p class="mt-4 text-body-medium text-on-surface-variant">Une opération manque, avec une date ancienne ? Relis les 90 derniers jours. Les opérations déjà connues ne sont pas doublées.</p>
+  <form class="mt-3 flex flex-wrap items-center gap-3" method="post" action="/bank/sync-all"
+        hx-post="/bank/sync-all" hx-target="#error-bank" hx-swap="innerHTML" hx-disabled-elt="find button">
+    <button class="btn-tonal">Relire les 90 derniers jours</button>
+    <span class="htmx-indicator text-label-large text-on-surface-variant" role="status">Relecture en cours…</span>
+  </form>
+</section>
+{% endif %}
+
+<p id="error-bank" role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container empty:hidden"></p>
+
+{% if configured %}
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="connect-title">
+  <h2 id="connect-title" class="px-2 pb-1 text-title-medium">{% if connections.is_empty() %}Connecter une banque{% else %}Connecter ou renouveler une banque{% endif %}</h2>
+  <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Tu seras envoyé chez ta banque pour donner ton consentement, valable 90 jours. Renouveler une banque déjà connectée garde le rattachement de tes comptes. Le nom doit être celui de la banque chez EnableBanking (en bac à sable : « Mock ASPSP », pays FI).</p>
+  <form class="grid items-end gap-3 md:grid-cols-[1fr_6rem_auto]" method="post" action="/bank/connect">
+    <label class="field-label">Banque
+      <input class="field" name="bank_name" required maxlength="100" autocomplete="off" list="bank-choices">
+      <datalist id="bank-choices"></datalist>
+    </label>
+    <label class="field-label">Pays
+      {# Propose les banques du pays (htmx) ; sans JavaScript, le nom se tape à la main. #}
+      <input class="field" name="country" value="FR" required minlength="2" maxlength="2" autocomplete="off"
+             hx-get="/fragments/banks" hx-trigger="load, input changed delay:300ms" hx-target="#bank-choices" hx-swap="innerHTML">
+    </label>
+    <button class="btn-filled">Connecter</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

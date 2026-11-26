@@ -5,7 +5,8 @@ use application::read_net_worth::Line;
 use asset::AssetKind;
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
-use chrono::{Local, NaiveDate};
+use chrono::{Datelike, Local, NaiveDate};
+use rust_decimal::Decimal;
 use serde::Deserialize;
 use shared::{Currency, CurrencyMismatch, Money};
 use valuation::Valuation;
@@ -39,6 +40,11 @@ pub(crate) fn freshness(latest: Option<&Valuation>, today: NaiveDate) -> Option<
 /// puis la passe explicitement aux cas d'usage et aux vues (une requête à minuit reste cohérente).
 pub(crate) fn today() -> NaiveDate {
     Local::now().date_naive()
+}
+
+/// L'instant présent, pour dater les sessions : avec `today()`, la seule lecture de l'horloge du serveur.
+pub(crate) fn now() -> chrono::DateTime<chrono::Utc> {
+    chrono::Utc::now()
 }
 
 pub(crate) fn date_label(date: NaiveDate) -> String {
@@ -86,6 +92,44 @@ pub(crate) fn net_worth_query(today: NaiveDate) -> read_net_worth::Query {
     }
 }
 
+/// Un montant saisi dans un formulaire : accepte « 1 234,56 » comme « 1234.56 ».
+pub(crate) fn parse_amount(text: &str) -> Option<Decimal> {
+    text.replace([' ', '\u{a0}'], "")
+        .replace(',', ".")
+        .parse()
+        .ok()
+}
+
+const MONTH_NAMES: [&str; 12] = [
+    "janvier",
+    "février",
+    "mars",
+    "avril",
+    "mai",
+    "juin",
+    "juillet",
+    "août",
+    "septembre",
+    "octobre",
+    "novembre",
+    "décembre",
+];
+
+/// « octobre 2026 ».
+pub(crate) fn month_label(date: NaiveDate) -> String {
+    format!("{} {}", MONTH_NAMES[date.month0() as usize], date.year())
+}
+
+/// « 2026-10 » : un mois dans une adresse.
+pub(crate) fn month_slug(date: NaiveDate) -> String {
+    date.format("%Y-%m").to_string()
+}
+
+/// Le mois d'une adresse (« 2026-10 »), ou `None` si elle n'en est pas un.
+pub(crate) fn parse_month(slug: &str) -> Option<NaiveDate> {
+    NaiveDate::parse_from_str(&format!("{slug}-01"), "%Y-%m-%d").ok()
+}
+
 /// Le format attendu par `<input type="date">`.
 pub(crate) fn iso_date(date: NaiveDate) -> String {
     date.format("%Y-%m-%d").to_string()
@@ -115,4 +159,19 @@ pub(crate) fn with_flash_consumed(page: Response, had_flash: bool) -> Response {
 #[derive(Deserialize)]
 pub struct ErrorParams {
     pub(crate) error: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn nomme_et_lit_un_mois() {
+        let date = NaiveDate::from_ymd_opt(2026, 2, 17).unwrap();
+        assert_eq!(month_label(date), "février 2026");
+        assert_eq!(month_slug(date), "2026-02");
+        assert_eq!(parse_month("2026-02"), NaiveDate::from_ymd_opt(2026, 2, 1));
+        assert_eq!(parse_month("2026-13"), None);
+        assert_eq!(parse_month("octobre"), None);
+    }
 }

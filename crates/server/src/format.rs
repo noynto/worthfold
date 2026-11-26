@@ -43,14 +43,15 @@ fn amount(value: Decimal) -> String {
 /// Version courte pour les axes d'un graphique : `245 k€`, `1,2 M€`, `−80 k€`.
 pub fn money_short(value: f64, currency: Currency) -> String {
     let (scaled, unit, decimals) = match value.abs() {
-        v if v >= 1_000_000.0 => (value / 1_000_000.0, "M", 1),
+        v if v >= 1_000_000.0 => (value / 1_000_000.0, "M", 2),
         v if v >= 10_000.0 => (value / 1_000.0, "k", 0),
         v if v >= 1_000.0 => (value / 1_000.0, "k", 1),
         _ => (value, "", 0),
     };
     let mut number = format!("{:.*}", decimals, scaled.abs()).replace('.', ",");
-    if number.ends_with(",0") {
-        number.truncate(number.len() - 2);
+    // Les zéros de fin ne disent rien (« 1,30 » → « 1,3 », « 2,00 » → « 2 »).
+    if number.contains(',') {
+        number.truncate(number.trim_end_matches('0').trim_end_matches(',').len());
     }
     let sign = if scaled < 0.0 && number != "0" {
         "−"
@@ -125,6 +126,9 @@ mod tests {
         assert_eq!(money_short(2_500.0, Currency::Eur), "2,5\u{202F}k€");
         assert_eq!(money_short(-80_000.0, Currency::Eur), "−80\u{202F}k€");
         assert_eq!(money_short(0.0, Currency::Eur), "0\u{a0}€");
+        // Des graduations voisines au-delà du million restent distinctes.
+        assert_eq!(money_short(2_450_000.0, Currency::Eur), "2,45\u{202F}M€");
+        assert_eq!(money_short(2_500_000.0, Currency::Eur), "2,5\u{202F}M€");
     }
 
     #[test]

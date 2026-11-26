@@ -1,6 +1,12 @@
 //! Services : règles qui croisent plusieurs domaines. Des fonctions pures,
 //! sans provider ni entrée-sortie : des objets déjà lus en entrée, une valeur en sortie.
 
+pub mod bank_csv;
+pub mod budget;
+pub mod forecast;
+pub mod recurrence;
+pub mod transactions;
+
 use asset::Asset;
 use chrono::NaiveDate;
 use shared::{CurrencyMismatch, Money};

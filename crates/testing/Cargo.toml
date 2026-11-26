@@ -9,5 +9,13 @@ license.workspace = true
 anyhow = "1.0.104"
 asset = { package = "worthfold-asset", path = "../asset" }
 async-trait = "0.1.92"
+recurrence = { package = "worthfold-recurrence", path = "../recurrence" }
 shared = { package = "worthfold-shared", path = "../shared" }
+chrono = "0.4.45"
+budget = { package = "worthfold-budget", path = "../budget" }
+category = { package = "worthfold-category", path = "../category" }
+transaction = { package = "worthfold-transaction", path = "../transaction" }
 valuation = { package = "worthfold-valuation", path = "../valuation" }
+bank = { package = "worthfold-bank", path = "../bank" }
+auth = { package = "worthfold-auth", path = "../auth" }
+rust_decimal = "1.43.0"

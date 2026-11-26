@@ -33,6 +33,8 @@ struct AssetDetail {
     history: Vec<HistoryRow>,
     // Pour modifier et supprimer (partie `#asset-manage`, rechargée après une valorisation).
     kind_code: &'static str,
+    /// Un compte bancaire a des opérations (page `/assets/{id}/transactions`).
+    has_transactions: bool,
     currency: &'static str,
     /// Devise et sens figés dès la première valorisation.
     currency_locked: bool,
@@ -101,6 +103,7 @@ fn asset_detail(output: &read_asset::Output, today: NaiveDate) -> AssetDetail {
         freshness: freshness(latest, today),
         history,
         kind_code: output.asset.kind.code(),
+        has_transactions: output.asset.kind == AssetKind::BankAccount,
         currency: output.asset.currency.code(),
         currency_locked: count > 0,
         valuations: format::count(count, "valorisation", "valorisations"),

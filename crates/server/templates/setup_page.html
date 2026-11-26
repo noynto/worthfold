@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Première configuration · worthfold{% endblock %}
+{% block header %}{% endblock %}
+{% block content %}
+<section class="mx-auto mt-8 w-full max-w-md rounded-xl-increased bg-surface-container-low p-6 md:p-10" aria-labelledby="setup-title">
+  <p class="text-title-large font-semibold tracking-tight text-primary">worthfold</p>
+  <h1 id="setup-title" class="mt-4 text-headline-small">Choisis ton mot de passe</h1>
+  <p class="mt-2 text-body-medium text-on-surface-variant">Il protège tes comptes et tes patrimoines. Une phrase de passe d'au moins {{ min_length }} caractères convient très bien. worthfold ne le conserve pas : seule une empreinte l'est.</p>
+  {% if let Some(error) = error %}
+  <p role="alert" class="mt-4 rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ error }}</p>
+  {% endif %}
+  <form class="mt-4 flex flex-col gap-4" method="post" action="/setup">
+    <label class="field-label">Code de configuration
+      <input class="field" name="setup_code" required autocomplete="off" autofocus aria-describedby="code-help">
+      <span id="code-help" class="text-label-medium text-on-surface-variant">Affiché dans la console où tu as lancé worthfold. Il prouve que tu as la main sur la machine.</span>
+    </label>
+    <label class="field-label">Mot de passe
+      <input class="field" name="password" type="password" required minlength="{{ min_length }}" autocomplete="new-password">
+    </label>
+    <label class="field-label">Mot de passe, encore une fois
+      <input class="field" name="confirmation" type="password" required minlength="{{ min_length }}" autocomplete="new-password">
+    </label>
+    <button class="btn-filled">Enregistrer et entrer</button>
+  </form>
+</section>
+{% endblock %}

@@ -6,20 +6,35 @@
   <title>{% block title %}worthfold{% endblock %}</title>
   <link rel="preload" href="/static/fonts/roboto-flex-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/app.css">
-  {# htmx, embarqué dans le binaire. 422 et 500 sont affichés dans la cible (messages d'erreur), 204 ne change rien. #}
-  <meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true,"error":true},{"code":"500","swap":true,"error":true},{"code":"[45]..","swap":false,"error":true}]}'>
+  {# htmx, embarqué dans le binaire, sans évaluation de code ni style injecté (CSP stricte, voir docs/tech/security.md). 422 et 500 sont affichés dans la cible (messages d'erreur), 204 ne change rien. #}
+  <meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true,"error":true},{"code":"500","swap":true,"error":true},{"code":"[45]..","swap":false,"error":true}]}'>
   <script src="/static/htmx-2.0.11.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
 </head>
 <body class="min-h-dvh bg-surface font-sans text-body-large text-on-surface antialiased">
   <main class="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 md:py-10">
-    {# Navigation M3 : deux destinations, la page active porte l'indicateur `secondary-container`. #}
+    {% block header %}
+    {# Navigation M3 : quatre destinations et un menu Réglages, la page active porte l'indicateur `secondary-container`. #}
     <header class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-2">
       <a href="/" class="text-title-large font-semibold tracking-tight text-primary">worthfold</a>
-      <nav aria-label="Navigation principale" class="flex gap-1">
+      <nav aria-label="Navigation principale" class="flex flex-wrap gap-1">
         <a href="/" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large {% if section == "dashboard" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}"{% if section == "dashboard" %} aria-current="page"{% endif %}>Tableau de bord</a>
         <a href="/assets" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large {% if section == "assets" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}"{% if section == "assets" %} aria-current="page"{% endif %}>Actifs</a>
+        <a href="/budget" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large {% if section == "budget" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}"{% if section == "budget" %} aria-current="page"{% endif %}>Budget</a>
+        <a href="/forecast" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large {% if section == "forecast" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}"{% if section == "forecast" %} aria-current="page"{% endif %}>Prévisions</a>
+        {# Réglages : ce qu'on configure de temps en temps, replié pour garder quatre destinations visibles. Un `details` marche sans JavaScript. #}
+        <details class="relative">
+          <summary class="state-layer inline-flex min-h-12 cursor-pointer list-none items-center rounded-full px-4 text-label-large {% if section == "payments" || section == "bank" || section == "categories" || section == "account" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}">Réglages</summary>
+          <div class="absolute right-0 z-10 mt-1 min-w-48 rounded-md bg-surface-container py-2 shadow-md">
+          <a href="/payments" class="state-layer flex min-h-12 items-center px-4 text-label-large {% if section == "payments" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface{% endif %}"{% if section == "payments" %} aria-current="page"{% endif %}>Paiements</a>
+          <a href="/bank" class="state-layer flex min-h-12 items-center px-4 text-label-large {% if section == "bank" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface{% endif %}"{% if section == "bank" %} aria-current="page"{% endif %}>Banque</a>
+          <a href="/categories" class="state-layer flex min-h-12 items-center px-4 text-label-large {% if section == "categories" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface{% endif %}"{% if section == "categories" %} aria-current="page"{% endif %}>Catégories</a>
+          <a href="/account" class="state-layer flex min-h-12 items-center px-4 text-label-large {% if section == "account" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface{% endif %}"{% if section == "account" %} aria-current="page"{% endif %}>Compte</a>
+          </div>
+        </details>
       </nav>
     </header>
+    {% endblock %}
     {% block content %}{% endblock %}
   </main>
   {# Snackbar M3 : confirmations des actions, en bas de l'écran (voir docs/design/ux.md, règle 2). #}

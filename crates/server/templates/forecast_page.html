@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Prévisions · worthfold{% endblock %}
+{% block content %}
+
+<h1 class="px-2 text-headline-small">Prévisions</h1>
+
+<section class="rounded-xl-increased bg-surface-container-low p-6 md:p-10" aria-labelledby="start-title">
+  <h2 id="start-title" class="text-label-large text-on-surface-variant">Sur tes comptes courants aujourd'hui</h2>
+  <p class="mt-1 text-display-medium font-medium tabular-nums">{{ start_balance }}</p>
+</section>
+
+{% for warning in warnings %}
+<p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ warning }}</p>
+{% endfor %}
+
+{# Les trois horizons : le solde attendu, la fourchette, le patrimoine net. #}
+<section class="grid gap-4 md:grid-cols-3" aria-label="Soldes prévus">
+  {% for horizon in horizons %}
+  <div class="rounded-xl bg-surface-container-low p-4">
+    <h2 class="text-label-large text-on-surface-variant">{{ horizon.title }}</h2>
+    <p class="mt-1 text-headline-small font-medium tabular-nums {% if horizon.expected_negative %}text-error{% endif %}">{{ horizon.expected }}</p>
+    <p class="text-body-medium tabular-nums text-on-surface-variant">{{ horizon.range }}</p>
+    {% if let Some(net_worth) = horizon.net_worth %}<p class="mt-2 text-body-medium tabular-nums">{{ net_worth }}</p>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+
+{# La courbe : le solde attendu et la fourchette entre le scénario prudent et le favorable. #}
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="curve-title">
+  <h2 id="curve-title" class="px-2 pb-2 text-title-medium">Évolution prévue</h2>
+  <div class="w-full">{{ chart_svg|safe }}</div>
+  <p class="px-2 pt-2 text-label-medium text-on-surface-variant">Trait plein : le scénario attendu. Pointillés et bande : du prudent au favorable.</p>
+</section>
+
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="basis-title">
+  <h2 id="basis-title" class="px-2 pb-1 text-title-medium">Sur quoi ça repose</h2>
+  <ul class="flex flex-col gap-2 px-2 text-body-medium text-on-surface-variant">
+    {% for line in basis %}<li>{{ line }}</li>{% endfor %}
+  </ul>
+  <p class="px-2 pt-3 text-body-medium text-on-surface-variant">Les échéances se déclarent sur la page <a href="/payments" class="text-primary hover:underline">Paiements</a>.</p>
+</section>
+<section class="rounded-xl bg-surface-container-low p-2 md:p-3">
+  <details>
+    <summary class="state-layer flex min-h-12 cursor-pointer list-none items-center rounded-md px-4 text-title-medium [&::-webkit-details-marker]:hidden">Détail mois après mois</summary>
+  <ul class="divide-y divide-outline-variant">
+    {% for month in months %}
+    <li class="px-4 py-3">
+      <div class="flex items-baseline gap-4">
+        <span class="min-w-0 grow text-title-medium">{{ month.label }}</span>
+        <span class="shrink-0 text-title-medium tabular-nums {% if month.negative %}text-error{% else if month.below_cushion %}text-tertiary{% endif %}">{{ month.expected }}</span>
+      </div>
+      <p class="text-body-medium tabular-nums text-on-surface-variant">{{ month.movements }} sur le mois · {{ month.range }}{% if month.below_cushion %} · sous le matelas{% endif %}{% if month.negative %} · à découvert{% endif %}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  </details>
+</section>
+
+{% endblock %}

@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block title %}Paiements · worthfold{% endblock %}
+{% block snackbar %}{% if let Some(flash) = flash %}<p class="snackbar">{{ flash }}</p>{% endif %}{% endblock %}
+{% block content %}
+
+<h1 class="px-2 text-headline-small">Paiements prévus</h1>
+
+{% if let Some(error) = error %}
+<p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ error }}</p>
+{% endif %}
+<p id="error-payments" role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container empty:hidden"></p>
+
+{# Ce que l'historique laisse penser régulier : proposé, jamais ajouté sans un clic. #}
+{% if !suggestions.is_empty() %}
+<section class="rounded-xl bg-surface-container-low p-2 md:p-3" aria-labelledby="suggestions-title">
+  <h2 id="suggestions-title" class="px-4 pb-1 pt-3 text-title-medium">Repéré dans tes relevés</h2>
+  <p class="px-4 pb-2 text-body-medium text-on-surface-variant">Ces opérations reviennent à intervalle régulier. Ajoute celles que tu veux suivre.</p>
+  <ul class="divide-y divide-outline-variant">
+    {% for s in suggestions %}
+    <li class="flex items-center gap-4 px-4 py-3">
+      <span class="min-w-0 grow">
+        <span class="block break-words text-title-medium">{{ s.label }} <span class="text-body-medium text-on-surface-variant">· {{ s.direction }} · {{ s.account }}</span></span>
+        <span class="block text-body-medium text-on-surface-variant">{{ s.schedule }} · {{ s.amount }}</span>
+        <span class="block text-label-medium text-on-surface-variant">{{ s.detail }}</span>
+      </span>
+      <form method="post" action="/payments/suggestions">
+        <input type="hidden" name="account_id" value="{{ s.account_id }}">
+        <input type="hidden" name="pattern" value="{{ s.pattern }}">
+        <input type="hidden" name="direction" value="{{ s.direction_code }}">
+        <button class="btn-tonal" aria-label="Ajouter {{ s.label }}">Ajouter</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{# Le calendrier : ce qui est arrivé, ce qui manque, ce qui est attendu. #}
+<section class="rounded-xl bg-surface-container-low p-2 md:p-3" aria-labelledby="calendar-title">
+  <h2 id="calendar-title" class="px-4 pb-1 pt-3 text-title-medium">Échéances</h2>
+  <p class="px-4 pb-2 text-body-medium text-on-surface-variant">Ce qui est arrivé, ce qui manque et ce qui est attendu, d'après les paiements ci-dessous.</p>
+  {% if calendar.is_empty() %}
+  <p class="px-4 py-4 text-body-medium text-on-surface-variant">Aucune échéance à venir ni récente : ajoute un paiement ci-dessous.</p>
+  {% else %}
+  <ol class="divide-y divide-outline-variant">
+    {% for row in calendar %}
+    <li class="px-4 py-3">
+      <div class="flex items-center gap-4">
+        <span class="w-24 shrink-0 text-body-medium tabular-nums text-on-surface-variant">{{ row.date }}</span>
+        <span class="min-w-0 grow">
+          <span class="block break-words text-body-large {% if row.state == "skipped" %}line-through text-on-surface-variant{% endif %}">{{ row.label }}</span>
+          <span class="block text-label-medium {% if row.state == "missing" %}text-error{% else if row.state == "honored" %}text-primary{% else %}text-on-surface-variant{% endif %}">{{ row.status }}{% if row.overridden %} · montant modifié{% endif %}</span>
+        </span>
+        <span class="shrink-0 whitespace-nowrap text-title-medium tabular-nums {% if row.negative %}text-error{% endif %} {% if row.state == "skipped" %}line-through text-on-surface-variant{% endif %}">{{ row.amount }}</span>
+      </div>
+      {% if row.editable %}
+      <details class="mt-1 pl-28">
+        <summary class="state-layer inline-flex min-h-12 cursor-pointer list-none items-center rounded-md px-2 text-label-large text-primary [&::-webkit-details-marker]:hidden">Corriger cette échéance</summary>
+        <div class="flex flex-wrap items-end gap-3 pb-2">
+          <form method="post" action="/payments/{{ row.payment_id }}/occurrences/{{ row.iso_date }}">
+            <input type="hidden" name="action" value="skip">
+            <button class="btn-tonal">Sauter</button>
+          </form>
+          <form class="flex items-end gap-2" method="post" action="/payments/{{ row.payment_id }}/occurrences/{{ row.iso_date }}">
+            <input type="hidden" name="action" value="amount">
+            <label class="field-label">Autre montant (€)
+              <input class="field" name="amount" inputmode="decimal" required>
+            </label>
+            <button class="btn-tonal">Fixer</button>
+          </form>
+          {% if row.has_exception %}
+          <form method="post" action="/payments/{{ row.payment_id }}/occurrences/{{ row.iso_date }}">
+            <input type="hidden" name="action" value="clear">
+            <button class="btn-tonal">Rétablir</button>
+          </form>
+          {% endif %}
+        </div>
+      </details>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+</section>
+
+{# Les paiements déclarés. #}
+<section class="rounded-xl bg-surface-container-low p-2 md:p-3" aria-labelledby="payments-title">
+  <h2 id="payments-title" class="px-4 pb-1 pt-3 text-title-medium">Mes paiements</h2>
+  <p class="px-4 pb-2 text-body-medium text-on-surface-variant">Les revenus et les charges que tu attends. Le prévisionnel et le budget s'appuient dessus.</p>
+  {% if payments.is_empty() %}
+  <p class="px-4 py-4 text-body-medium text-on-surface-variant">Aucun paiement pour l'instant : salaire, fermage, impôts, abonnements… ajoute le premier ci-dessous.</p>
+  {% else %}
+  <ul class="divide-y divide-outline-variant">
+    {% for p in payments %}
+    <li class="px-4 py-3">
+      <div class="flex items-start gap-4">
+        <span class="min-w-0 grow">
+          <span class="block break-words text-title-medium">{{ p.label }} <span class="text-body-medium text-on-surface-variant">· {{ p.direction }} · {{ p.account }}</span></span>
+          <span class="block text-body-medium text-on-surface-variant">{{ p.schedule }}</span>
+          <span class="block text-body-medium">{{ p.amount }}</span>
+          {% if let Some(window) = p.window %}<span class="block text-label-medium text-on-surface-variant">{{ window }}</span>{% endif %}
+        </span>
+        <form method="post" action="/payments/{{ p.id }}/delete"
+              hx-post="/payments/{{ p.id }}/delete" hx-target="#error-payments" hx-swap="innerHTML" hx-disabled-elt="find button"
+              hx-confirm="{{ p.delete_confirm }}">
+          <button class="btn-text-error" aria-label="Supprimer le paiement {{ p.label }}">Supprimer</button>
+        </form>
+      </div>
+      <details class="mt-1">
+        <summary class="state-layer inline-flex min-h-12 cursor-pointer list-none items-center rounded-md px-2 text-label-large text-primary [&::-webkit-details-marker]:hidden">Nouveau montant</summary>
+        <form class="grid items-end gap-3 pb-2 md:grid-cols-[1fr_1fr_1fr_auto]" method="post" action="/payments/{{ p.id }}/steps">
+          <label class="field-label">À partir du
+            <input class="field" name="from" type="date" value="{{ today_iso }}" required>
+          </label>
+          <label class="field-label">Montant (€)
+            <input class="field" name="amount" inputmode="decimal" required>
+          </label>
+          <label class="field-label">Marge (€), facultatif
+            <input class="field" name="margin" inputmode="decimal" placeholder="0">
+          </label>
+          <button class="btn-filled">Enregistrer</button>
+        </form>
+        <p class="pb-2 text-label-medium text-on-surface-variant">Les échéances d'avant cette date gardent leur ancien montant. Une marge à zéro dit un montant exact : l'avis d'imposition, l'indice publié.</p>
+      </details>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+
+{# Ajouter un paiement : quand, combien, pendant combien de temps. #}
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="new-title">
+  <details{% if payments.is_empty() %} open{% endif %}>
+    <summary class="state-layer flex min-h-12 cursor-pointer list-none items-center rounded-md px-2 text-title-medium [&::-webkit-details-marker]:hidden" id="new-title">Ajouter un paiement</summary>
+    {% if accounts.is_empty() %}
+    <p class="mt-3 px-2 text-body-medium text-on-surface-variant">Il faut d'abord un compte bancaire : ajoute-le dans les <a href="/assets" class="text-primary hover:underline">actifs</a>.</p>
+    {% else %}
+    <form class="mt-3 flex flex-col gap-6" method="post" action="/payments">
+      <fieldset class="grid gap-3 md:grid-cols-2">
+        <legend class="px-2 pb-2 text-label-large text-on-surface-variant">Quoi</legend>
+        <label class="field-label">Nom
+          <input class="field" name="label" placeholder="Salaire" required maxlength="100">
+        </label>
+        <label class="field-label">Mot du libellé bancaire
+          <input class="field" name="pattern" placeholder="salaire" required maxlength="100" aria-describedby="pattern-help">
+          <span id="pattern-help" class="text-label-medium text-on-surface-variant">Un mot qu'on retrouve dans les relevés : il sert à reconnaître le paiement quand il arrive.</span>
+        </label>
+        <label class="field-label">Sens
+          <select class="field" name="direction">
+            <option value="in">Entrée d'argent (salaire, fermage…)</option>
+            <option value="out">Sortie d'argent (loyer, impôt…)</option>
+          </select>
+        </label>
+        <label class="field-label">Compte
+          <select class="field" name="account_id">
+            {% for account in accounts %}<option value="{{ account.0 }}">{{ account.1 }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="field-label md:col-span-2">Catégorie, facultatif
+          <select class="field" name="category_id">
+            <option value="">Sans catégorie</option>
+            {% for category in categories %}<option value="{{ category.0 }}">{{ category.1 }}</option>{% endfor %}
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset class="grid gap-3 md:grid-cols-2">
+        <legend class="px-2 pb-2 text-label-large text-on-surface-variant">Quand</legend>
+        <label class="field-label">Rythme
+          <select class="field" name="schedule">
+            <option value="monthly">Chaque mois</option>
+            <option value="every_n">Tous les N mois (trimestre, semestre, année)</option>
+            <option value="on_months">Certains mois de l'année</option>
+            <option value="once">Une seule fois</option>
+          </select>
+        </label>
+        <label class="field-label">Jour du mois
+          <select class="field" name="day">
+            {% for day in days %}<option value="{{ day }}">{{ day }}</option>{% endfor %}
+            <option value="last">Dernier jour du mois</option>
+          </select>
+        </label>
+        <details class="md:col-span-2">
+          <summary class="state-layer inline-flex min-h-12 cursor-pointer list-none items-center rounded-md px-2 text-label-large text-primary [&::-webkit-details-marker]:hidden">Précisions selon le rythme choisi</summary>
+          <p class="px-2 pb-2 text-label-medium text-on-surface-variant">Inutile pour « Chaque mois ». Pour les autres rythmes, remplis le groupe qui correspond.</p>
+          <div class="grid gap-3 md:grid-cols-2">
+        <label class="field-label">Si « Tous les N mois » : N (2 à 24)
+          <input class="field" name="every_n" inputmode="numeric" placeholder="3">
+        </label>
+        <label class="field-label">Si « Tous les N mois » : premier mois
+          <input class="field" name="first_month" type="month">
+        </label>
+        <label class="field-label">Si « Certains mois » : du mois de
+          <select class="field" name="month_from">
+            {% for month in months %}<option value="{{ month.0 }}">{{ month.1 }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="field-label">… au mois de (passe l'année si besoin)
+          <select class="field" name="month_to">
+            {% for month in months %}<option value="{{ month.0 }}">{{ month.1 }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="field-label md:col-span-2">Si « Une seule fois » : la date
+          <input class="field" name="once_date" type="date">
+        </label>
+          </div>
+        </details>
+      </fieldset>
+
+      <fieldset class="grid gap-3 md:grid-cols-2">
+        <legend class="px-2 pb-2 text-label-large text-on-surface-variant">Combien</legend>
+        <label class="field-label">Montant (€), en positif
+          <input class="field" name="amount" inputmode="decimal" required>
+        </label>
+        <label class="field-label">Marge (€), pour une estimation
+          <input class="field" name="margin" inputmode="decimal" placeholder="0">
+        </label>
+        <details class="md:col-span-2">
+          <summary class="state-layer inline-flex min-h-12 cursor-pointer list-none items-center rounded-md px-2 text-label-large text-primary [&::-webkit-details-marker]:hidden">Montant variable ou révisé chaque année</summary>
+          <div class="grid gap-3 md:grid-cols-2">
+        <label class="flex min-h-12 items-center gap-3 px-2 text-body-large md:col-span-2">
+          <input type="checkbox" name="observed" value="1">
+          <span>Montant variable : le tirer de mes relevés (médiane des derniers paiements)</span>
+        </label>
+        <label class="field-label">Révision annuelle estimée : mois
+          <select class="field" name="revision_month">
+            <option value="">Aucune</option>
+            {% for month in months %}<option value="{{ month.0 }}">{{ month.1 }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="field-label">… jour
+          <input class="field" name="revision_day" inputmode="numeric" placeholder="1">
+        </label>
+        <label class="field-label md:col-span-2">… variation estimée (%)
+          <input class="field" name="revision_change" inputmode="decimal" placeholder="2">
+        </label>
+          </div>
+        </details>
+      </fieldset>
+
+      <details>
+        <summary class="state-layer inline-flex min-h-12 cursor-pointer list-none items-center rounded-md px-2 text-label-large text-primary [&::-webkit-details-marker]:hidden">Limiter dans le temps (facultatif)</summary>
+      <fieldset class="grid gap-3 pt-2 md:grid-cols-3">
+          <legend class="sr-only">Pendant combien de temps</legend>
+        <label class="field-label">À partir du
+          <input class="field" name="window_from" type="date">
+        </label>
+        <label class="field-label">Jusqu'au
+          <input class="field" name="window_until" type="date">
+        </label>
+        <label class="field-label">Nombre d'échéances (demande une date de début)
+          <input class="field" name="window_count" inputmode="numeric" placeholder="4">
+        </label>
+      </fieldset>
+      </details>
+
+      <button class="btn-filled md:self-start">Ajouter le paiement</button>
+    </form>
+    {% endif %}
+  </details>
+</section>
+{% endblock %}

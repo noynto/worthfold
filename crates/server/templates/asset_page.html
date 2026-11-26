@@ -12,13 +12,19 @@
 
 {% include "partials/asset_header.html" %}
 
+{% if detail.has_transactions %}
+<a href="/assets/{{ detail.id }}/transactions" class="state-layer flex min-h-16 items-center gap-4 rounded-xl bg-surface-container-low px-6 py-4">
+  <span class="grow text-title-medium">Opérations du compte</span>
+  <span aria-hidden="true" class="text-title-large text-on-surface-variant">›</span>
+</a>
+{% endif %}
+
 {# Action principale de la page (règle d'UX 1) : la nouvelle valorisation, juste sous la valeur actuelle,
    avant l'historique qui s'allonge avec le temps. #}
 <section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="new-valuation">
   <h2 id="new-valuation" class="px-2 pb-4 text-title-medium">Nouvelle valorisation</h2>
   <form class="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="/assets/{{ detail.id }}/valuations"
-        hx-post="/assets/{{ detail.id }}/valuations" hx-target="#error-valuation" hx-swap="innerHTML" hx-disabled-elt="find button"
-        hx-on::after-request="if (event.detail.successful) this.amount.value = ''">
+        hx-post="/assets/{{ detail.id }}/valuations" hx-target="#error-valuation" hx-swap="innerHTML" hx-disabled-elt="find button" data-clear-on-success="amount">
     <label class="field-label">{{ amount_label }}
       <input class="field" name="amount" inputmode="decimal" placeholder="1 234,56" required>
     </label>

@@ -2,14 +2,14 @@ use anyhow::Context;
 use asset::{Asset, AssetProvider};
 use async_trait::async_trait;
 use shared::AssetId;
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, PgPool};
 
 pub struct PersistedAssets {
-    pool: SqlitePool,
+    pool: PgPool,
 }
 
 impl PersistedAssets {
-    pub fn new(pool: SqlitePool) -> Self {
+    pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
 }
@@ -38,17 +38,19 @@ impl TryFrom<AssetRow> for Asset {
 #[async_trait]
 impl AssetProvider for PersistedAssets {
     async fn read_all(&self) -> anyhow::Result<Vec<Asset>> {
-        sqlx::query_as::<_, AssetRow>("SELECT id, name, kind, currency FROM assets ORDER BY name")
-            .fetch_all(&self.pool)
-            .await
-            .context("Impossible de lire les actifs.")?
-            .into_iter()
-            .map(Asset::try_from)
-            .collect()
+        sqlx::query_as::<_, AssetRow>(
+            "SELECT id, name, kind, currency FROM assets ORDER BY name COLLATE \"C\"",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .context("Impossible de lire les actifs.")?
+        .into_iter()
+        .map(Asset::try_from)
+        .collect()
     }
 
     async fn read(&self, id: &AssetId) -> anyhow::Result<Option<Asset>> {
-        sqlx::query_as::<_, AssetRow>("SELECT id, name, kind, currency FROM assets WHERE id = ?")
+        sqlx::query_as::<_, AssetRow>("SELECT id, name, kind, currency FROM assets WHERE id = $1")
             .bind(id.as_str())
             .fetch_optional(&self.pool)
             .await
@@ -59,7 +61,7 @@ impl AssetProvider for PersistedAssets {
 
     async fn write(&self, asset: &Asset) -> anyhow::Result<()> {
         sqlx::query(
-            "INSERT INTO assets (id, name, kind, currency) VALUES (?, ?, ?, ?)
+            "INSERT INTO assets (id, name, kind, currency) VALUES ($1, $2, $3, $4)
              ON CONFLICT (id) DO UPDATE SET name = excluded.name, kind = excluded.kind, currency = excluded.currency",
         )
         .bind(asset.id.as_str())
@@ -73,7 +75,7 @@ impl AssetProvider for PersistedAssets {
     }
 
     async fn delete(&self, id: &AssetId) -> anyhow::Result<()> {
-        sqlx::query("DELETE FROM assets WHERE id = ?")
+        sqlx::query("DELETE FROM assets WHERE id = $1")
             .bind(id.as_str())
             .execute(&self.pool)
             .await

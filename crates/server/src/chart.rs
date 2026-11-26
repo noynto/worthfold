@@ -1,10 +1,11 @@
 //! Graphique d'évolution du patrimoine, dessiné en SVG côté serveur.
-//! La page l'intègre comme fragment htmx (`/fragments/chart`) et profite de sa feuille de style ;
+//! La page l'intègre comme fragment htmx (`/fragments/chart`) ; ses règles de style (`chart-*`) sont dans `app.css` ;
 //! sans JavaScript, `/net-worth/chart.svg` le sert en document autonome (voir [`standalone`]).
 
 use std::fmt::Write;
 
 use chrono::NaiveDate;
+use rust_decimal::Decimal;
 use rust_decimal::prelude::ToPrimitive;
 use shared::{Currency, Money};
 
@@ -16,31 +17,6 @@ const LEFT: f64 = 84.0;
 const RIGHT: f64 = 16.0;
 const TOP: f64 = 16.0;
 const BOTTOM: f64 = 36.0;
-
-const STYLE: &str = r#"<style>
-  /* Servi seul (sans JavaScript), le SVG est un document séparé : sans `color-scheme`, il aurait un fond clair opaque en thème sombre.
-     Intégré à la page, ces règles sont globales : d'où le préfixe `chart-` (`.grid` de Tailwind existe déjà). */
-  .chart { color-scheme: light dark; font-family: var(--font-sans); font-size: 12px; }
-  /* Les traits gardent leur épaisseur quelle que soit la largeur d'affichage. */
-  .chart-grid, .chart-zero, .chart-curve { vector-effect: non-scaling-stroke; }
-  .chart-grid { stroke: var(--color-outline-variant); stroke-width: 1; }
-  .chart-zero { stroke: var(--color-outline); stroke-dasharray: 4 4; }
-  .chart-label { fill: var(--color-on-surface-variant); font-variant-numeric: tabular-nums; }
-  .chart-curve { fill: none; stroke: var(--color-primary); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
-  .chart-area { fill: var(--color-primary); opacity: .12; }
-  .chart-dot { fill: var(--color-primary); stroke: var(--color-surface-container-low); stroke-width: 2; transition: r 360ms var(--ease-spatial-fast); }
-  .chart-dot:hover { r: 7; }
-  .chart-message { fill: var(--color-on-surface-variant); font-size: 14px; }
-  /* Sur téléphone, le graphique est réduit de moitié : le texte et les points sont agrandis d'autant
-     pour rester lisibles (environ 11 px affichés). La media query porte sur la largeur de l'élément object de la page. */
-  @media (max-width: 560px) {
-    .chart-label { font-size: 22px; }
-    .chart-message { font-size: 26px; }
-    .chart-dot { r: 8; stroke-width: 3; }
-    .chart-dot:hover { r: 11; }
-  }
-</style>"#;
-
 /// Le graphique de l'historique, ou un message s'il n'y a encore rien à tracer.
 pub fn render(points: &[(NaiveDate, Money)], currency: Currency) -> String {
     if points.is_empty() {
@@ -68,55 +44,15 @@ pub fn render(points: &[(NaiveDate, Money)], currency: Currency) -> String {
     };
     let y = |value: f64| TOP + (y_max - value) / (y_max - y_min) * (HEIGHT - TOP - BOTTOM);
 
-    let mut svg = open();
+    let mut svg = open("Évolution du patrimoine");
 
-    // Grille horizontale et graduations.
-    for tick in &ticks {
-        let ty = y(*tick);
-        let class = if *tick == 0.0 && ticks.len() > 1 && y_min < 0.0 {
-            "chart-zero"
-        } else {
-            "chart-grid"
-        };
-        let _ = write!(
-            svg,
-            r#"<line class="{class}" x1="{LEFT}" x2="{}" y1="{ty:.1}" y2="{ty:.1}"/>"#,
-            WIDTH - RIGHT
-        );
-        let _ = write!(
-            svg,
-            r#"<text class="chart-label" x="{}" y="{:.1}" text-anchor="end">{}</text>"#,
-            LEFT - 8.0,
-            ty + 4.0,
-            format::money_short(*tick, currency)
-        );
-    }
+    grid(&mut svg, &ticks, &y, currency);
 
-    // Dates : la première, la dernière et celle du milieu si la place le permet.
-    let mut labelled = vec![0, points.len() - 1];
-    if points.len() > 2 {
-        labelled.insert(1, points.len() / 2);
-    }
-    labelled.dedup();
-    for (i, &index) in labelled.iter().enumerate() {
-        let date = points[index].0;
-        let anchor = if labelled.len() == 1 {
-            "middle"
-        } else if i == 0 {
-            "start"
-        } else if i == labelled.len() - 1 {
-            "end"
-        } else {
-            "middle"
-        };
-        let _ = write!(
-            svg,
-            r#"<text class="chart-label" x="{:.1}" y="{}" text-anchor="{anchor}">{}</text>"#,
-            x(date),
-            HEIGHT - 10.0,
-            date.format("%d/%m/%Y")
-        );
-    }
+    date_labels(
+        &mut svg,
+        &points.iter().map(|(d, _)| *d).collect::<Vec<_>>(),
+        &x,
+    );
 
     // Courbe en escalier : entre deux saisies, le patrimoine vaut la dernière valeur connue
     // (le même choix que le calcul du total). Une pente inventerait une évolution progressive.
@@ -158,13 +94,148 @@ pub fn render(points: &[(NaiveDate, Money)], currency: Currency) -> String {
     svg
 }
 
+/// Grille horizontale et graduations ; la ligne du zéro est en pointillés quand elle est dans l'échelle.
+fn grid(svg: &mut String, ticks: &[f64], y: &impl Fn(f64) -> f64, currency: Currency) {
+    let y_min = ticks[0];
+    for tick in ticks {
+        let ty = y(*tick);
+        let class = if *tick == 0.0 && ticks.len() > 1 && y_min < 0.0 {
+            "chart-zero"
+        } else {
+            "chart-grid"
+        };
+        let _ = write!(
+            svg,
+            r#"<line class="{class}" x1="{LEFT}" x2="{}" y1="{ty:.1}" y2="{ty:.1}"/>"#,
+            WIDTH - RIGHT
+        );
+        let _ = write!(
+            svg,
+            r#"<text class="chart-label" x="{}" y="{:.1}" text-anchor="end">{}</text>"#,
+            LEFT - 8.0,
+            ty + 4.0,
+            format::money_short(*tick, currency)
+        );
+    }
+}
+
+/// Dates : la première, la dernière et celle du milieu si la place le permet.
+fn date_labels(svg: &mut String, dates: &[NaiveDate], x: &impl Fn(NaiveDate) -> f64) {
+    let mut labelled = vec![0, dates.len() - 1];
+    if dates.len() > 2 {
+        labelled.insert(1, dates.len() / 2);
+    }
+    labelled.dedup();
+    for (i, &index) in labelled.iter().enumerate() {
+        let date = dates[index];
+        let anchor = if labelled.len() == 1 {
+            "middle"
+        } else if i == 0 {
+            "start"
+        } else if i == labelled.len() - 1 {
+            "end"
+        } else {
+            "middle"
+        };
+        let _ = write!(
+            svg,
+            r#"<text class="chart-label" x="{:.1}" y="{}" text-anchor="{anchor}">{}</text>"#,
+            x(date),
+            HEIGHT - 10.0,
+            date.format("%d/%m/%Y")
+        );
+    }
+}
+
+/// Le graphique de la projection : le solde attendu en trait plein, la fourchette entre le scénario
+/// prudent et le favorable en bande. Une pente relie les fins de mois : la projection avance mois par mois.
+pub fn render_forecast(points: &[ForecastPoint], currency: Currency) -> String {
+    if points.len() < 2 {
+        return message("La projection s'affichera dès qu'il y aura un compte courant valorisé.");
+    }
+    let to_f64 = |m: Decimal| m.to_f64().unwrap_or(0.0);
+    let lows: Vec<f64> = points.iter().map(|p| to_f64(p.low)).collect();
+    let highs: Vec<f64> = points.iter().map(|p| to_f64(p.high)).collect();
+    let expected: Vec<f64> = points.iter().map(|p| to_f64(p.expected)).collect();
+    let ticks = nice_ticks(
+        lows.iter().copied().fold(f64::INFINITY, f64::min),
+        highs.iter().copied().fold(f64::NEG_INFINITY, f64::max),
+    );
+    let (y_min, y_max) = (ticks[0], ticks[ticks.len() - 1]);
+    let first = points[0].date;
+    let span_days = (points[points.len() - 1].date - first).num_days().max(1) as f64;
+    let x = |date: NaiveDate| {
+        LEFT + (date - first).num_days() as f64 / span_days * (WIDTH - LEFT - RIGHT)
+    };
+    let y = |value: f64| TOP + (y_max - value) / (y_max - y_min) * (HEIGHT - TOP - BOTTOM);
+
+    let mut svg = open("Projection du solde des comptes courants");
+    grid(&mut svg, &ticks, &y, currency);
+    date_labels(
+        &mut svg,
+        &points.iter().map(|p| p.date).collect::<Vec<_>>(),
+        &x,
+    );
+
+    let path = |values: &[f64]| {
+        points
+            .iter()
+            .zip(values)
+            .map(|(p, v)| format!("{:.1},{:.1}", x(p.date), y(*v)))
+            .collect::<Vec<_>>()
+            .join(" L")
+    };
+    let band: Vec<String> = points
+        .iter()
+        .zip(&highs)
+        .map(|(p, v)| format!("{:.1},{:.1}", x(p.date), y(*v)))
+        .chain(
+            points
+                .iter()
+                .zip(&lows)
+                .rev()
+                .map(|(p, v)| format!("{:.1},{:.1}", x(p.date), y(*v))),
+        )
+        .collect();
+    let _ = write!(
+        svg,
+        r#"<path class="chart-area" d="M{} Z"/><polyline class="chart-bound" points="{}"/><polyline class="chart-bound" points="{}"/><path class="chart-curve" fill="none" d="M{}"/>"#,
+        band.join(" L"),
+        path(&highs).replace(" L", " "),
+        path(&lows).replace(" L", " "),
+        path(&expected)
+    );
+    for (p, value) in points.iter().zip(&expected) {
+        let _ = write!(
+            svg,
+            r#"<circle class="chart-dot" cx="{:.1}" cy="{:.1}" r="4"><title>{} · {} (entre {} et {})</title></circle>"#,
+            x(p.date),
+            y(*value),
+            p.date.format("%d/%m/%Y"),
+            format::money(&Money::new(p.expected, currency)),
+            format::money(&Money::new(p.low, currency)),
+            format::money(&Money::new(p.high, currency)),
+        );
+    }
+    svg.push_str("</svg>");
+    svg
+}
+
+/// Un point de la projection : le solde attendu et sa fourchette à une date.
+pub struct ForecastPoint {
+    pub date: NaiveDate,
+    pub low: Decimal,
+    pub expected: Decimal,
+    pub high: Decimal,
+}
+
 /// Un SVG qui n'affiche qu'un message, centré. Le texte vient de l'application : on l'échappe quand même.
 pub fn message(text: &str) -> String {
     let escaped = text
         .replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;");
-    let mut svg = open();
+    let mut svg = open("Graphique indisponible");
     let _ = write!(
         svg,
         r#"<text class="chart-message" x="{}" y="{}" text-anchor="middle">{escaped}</text></svg>"#,
@@ -174,9 +245,9 @@ pub fn message(text: &str) -> String {
     svg
 }
 
-fn open() -> String {
+fn open(label: &str) -> String {
     format!(
-        r#"<svg class="chart" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH} {HEIGHT}" role="img" aria-label="Évolution du patrimoine">{STYLE}"#
+        r#"<svg class="chart" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH} {HEIGHT}" role="img" aria-label="{label}">"#
     )
 }
 
@@ -222,13 +293,43 @@ fn nice(value: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rust_decimal::Decimal;
 
     fn point(day: u32, amount: i64) -> (NaiveDate, Money) {
         (
             NaiveDate::from_ymd_opt(2026, 11, day).unwrap(),
             Money::new(Decimal::from(amount), Currency::Eur),
         )
+    }
+
+    fn forecast_point(month: u32, low: i64, expected: i64, high: i64) -> ForecastPoint {
+        ForecastPoint {
+            date: NaiveDate::from_ymd_opt(2026, month, 28).unwrap(),
+            low: Decimal::from(low),
+            expected: Decimal::from(expected),
+            high: Decimal::from(high),
+        }
+    }
+
+    #[test]
+    fn la_projection_trace_le_solde_attendu_et_sa_fourchette() {
+        let svg = render_forecast(
+            &[
+                forecast_point(10, 1000, 1000, 1000),
+                forecast_point(11, 800, 1200, 1500),
+                forecast_point(12, 600, 1400, 2000),
+            ],
+            Currency::Eur,
+        );
+        assert_eq!(svg.matches(r#"class="chart-bound""#).count(), 2);
+        assert_eq!(svg.matches("<circle").count(), 3);
+        assert!(svg.contains("Projection du solde"));
+        assert!(svg.ends_with("</svg>"));
+    }
+
+    #[test]
+    fn la_projection_sans_deux_points_affiche_un_message() {
+        let svg = render_forecast(&[forecast_point(11, 1, 1, 1)], Currency::Eur);
+        assert!(svg.contains("chart-message"));
     }
 
     #[test]
@@ -276,15 +377,10 @@ mod tests {
     }
 
     #[test]
-    fn les_styles_ne_contiennent_aucun_chevron() {
-        // Le SVG est du XML : un « < » dans la feuille de style, même en commentaire, casse tout le document.
-        let css = STYLE
-            .trim_start_matches("<style>")
-            .trim_end_matches("</style>");
-        assert!(
-            !css.contains('<') && !css.contains('&'),
-            "caractère interdit dans STYLE"
-        );
+    fn le_svg_n_embarque_aucun_style() {
+        // Les règles `chart-*` sont dans `app.css` : un `<style>` en ligne obligerait la CSP à tolérer le style en ligne.
+        let svg = render(&[point(1, 1000), point(9, 1200)], Currency::Eur);
+        assert!(!svg.contains("<style") && !svg.contains("style="));
     }
 
     #[test]

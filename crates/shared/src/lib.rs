@@ -6,69 +6,80 @@ use std::str::FromStr;
 
 use rust_decimal::Decimal;
 
-/// Identifiant d'un actif (UUID v7 : trié par date de création).
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct AssetId(String);
+/// Déclare un identifiant : une chaîne opaque (UUID v7, trié par date de création).
+macro_rules! id_type {
+    ($(#[$doc:meta])* $name:ident) => {
+        $(#[$doc])*
+        #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+        pub struct $name(String);
 
-impl AssetId {
-    pub fn generate() -> Self {
-        Self(uuid::Uuid::now_v7().to_string())
-    }
+        impl $name {
+            pub fn generate() -> Self {
+                Self(uuid::Uuid::now_v7().to_string())
+            }
 
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
+            pub fn as_str(&self) -> &str {
+                &self.0
+            }
+        }
+
+        impl From<String> for $name {
+            fn from(value: String) -> Self {
+                Self(value)
+            }
+        }
+
+        impl From<&str> for $name {
+            fn from(value: &str) -> Self {
+                Self(value.to_owned())
+            }
+        }
+
+        impl fmt::Display for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str(&self.0)
+            }
+        }
+    };
 }
 
-impl From<String> for AssetId {
-    fn from(value: String) -> Self {
-        Self(value)
-    }
+/// Une valeur aléatoire imprévisible (122 bits), pour ce qui ne doit pas se deviner : l'état d'un retour de banque.
+pub fn random_token() -> String {
+    uuid::Uuid::new_v4().simple().to_string()
 }
 
-impl From<&str> for AssetId {
-    fn from(value: &str) -> Self {
-        Self(value.to_owned())
-    }
-}
-
-impl fmt::Display for AssetId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
-    }
-}
-
-/// Identifiant d'une valorisation (UUID v7 : trié par date de saisie, ce qui départage deux valeurs du même jour).
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ValuationId(String);
-
-impl ValuationId {
-    pub fn generate() -> Self {
-        Self(uuid::Uuid::now_v7().to_string())
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl From<String> for ValuationId {
-    fn from(value: String) -> Self {
-        Self(value)
-    }
-}
-
-impl From<&str> for ValuationId {
-    fn from(value: &str) -> Self {
-        Self(value.to_owned())
-    }
-}
-
-impl fmt::Display for ValuationId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
-    }
-}
+id_type!(
+    /// Identifiant d'un actif (UUID v7 : trié par date de création).
+    AssetId
+);
+id_type!(
+    /// Identifiant d'une valorisation (UUID v7 : trié par date de saisie, ce qui départage deux valeurs du même jour).
+    ValuationId
+);
+id_type!(
+    /// Identifiant d'une transaction bancaire (UUID v7 : trié par date d'import).
+    TransactionId
+);
+id_type!(
+    /// Identifiant d'une catégorie de transactions.
+    CategoryId
+);
+id_type!(
+    /// Identifiant d'une règle d'affectation de catégorie.
+    CategoryRuleId
+);
+id_type!(
+    /// Identifiant d'un consentement bancaire (UUID v7 : trié par date de création).
+    BankConnectionId
+);
+id_type!(
+    /// Identifiant d'un paiement prévu (UUID v7 : trié par date de création).
+    PlannedPaymentId
+);
+id_type!(
+    /// Identifiant d'une enveloppe de budget (UUID v7 : trié par date de saisie, ce qui départage deux plafonds du même mois).
+    EnvelopeId
+);
 
 /// Devise d'un montant. Seul l'euro est proposé pour l'instant (docs/specs/net-worth.md) ;
 /// le reste du code gère déjà plusieurs devises : en ajouter une, c'est une variante ici,

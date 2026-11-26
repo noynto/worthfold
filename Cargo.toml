@@ -7,3 +7,19 @@ edition = "2024"
 version = "0.1.0"
 publish = false
 license = "MIT"
+
+# Argon2 est lent à dessein ; non optimisé, il l'est bien trop (plusieurs secondes par connexion en développement).
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3
+
+# Binaire de production : le plus petit et le plus rapide que l'on sache produire (voir `Dockerfile`).
+# `panic = "abort"` : une panique arrête le processus, que le conteneur relance (`restart: unless-stopped`) ;
+# elle ne laisse jamais un serveur à moitié vivant.
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

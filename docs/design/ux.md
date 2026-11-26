@@ -1,6 +1,34 @@
-# Règles d'UX
+# Expérience utilisateur
 
-Dix règles simples, à vérifier sur chaque écran et chaque nouvelle fonctionnalité. Elles complètent les [fondations](foundations.md) (le « à quoi ça ressemble ») par le « comment ça se comporte ». Application aux écrans : [Écrans](screens.md).
+Ce document dit **comment l'application se comporte** : pour qui, pour quoi faire, et selon quelles règles. L'apparence est décrite dans les [fondations](foundations.md) et les [écrans](screens.md) ; la protection des données dans [Sécurité](../tech/security.md).
+
+## Pour qui, pour quoi faire
+
+Une seule personne suit son propre patrimoine sur son ordinateur, quelques minutes à la fois, une fois par semaine ou par mois. Elle n'est pas comptable : elle veut savoir *où elle en est* et *où elle va*, pas tenir une comptabilité. Conséquences :
+
+- Les chiffres importants se lisent d'un coup d'œil ; le détail se demande.
+- Rien n'est demandé qui puisse se déduire : la date du jour, la devise, la catégorie par règle, les opérations par la banque.
+- L'application ne décide jamais à la place de l'utilisateur : elle **suggère** (paiements détectés, versement d'épargne) et il accepte ou non.
+- Une donnée n'est jamais plus fiable qu'elle ne le paraît : une valeur a une date, une prévision a une fourchette et ses hypothèses.
+
+## Parcours principaux
+
+| Parcours | Chemin | Rythme |
+|---|---|---|
+| Savoir où j'en suis | Tableau de bord : total, graphique, actifs à mettre à jour | À chaque visite |
+| Mettre à jour un actif | Actifs → l'actif → Valoriser | Mensuel |
+| Suivre le mois | Budget : synthèse, enveloppes, versement d'épargne suggéré | Hebdomadaire |
+| Alimenter un compte courant | Banque (lecture) ou Opérations → Importer un relevé | Hebdomadaire ou mensuel |
+| Déclarer ses échéances | Paiements : accepter les suggestions, ajouter un revenu ou une charge | À l'installation, puis rare |
+| Anticiper | Prévisions : 3, 6 et 12 mois, alertes de découvert | Mensuel |
+| Entrer | Connexion : un mot de passe ; à la première utilisation, le choix du mot de passe avec le code affiché dans la console | À chaque ouverture après 14 jours, ou après une déconnexion |
+| Garder la banque connectée | Banque : renouveler avant l'expiration (90 jours) | Trimestriel |
+
+Un parcours tient en peu de gestes et ne passe jamais par une page sans rapport. Un état vide mène à l'étape suivante du parcours (règle 9).
+
+## Les règles
+
+Douze règles simples, à vérifier sur chaque écran et chaque nouvelle fonctionnalité. Elles complètent les [fondations](foundations.md) (le « à quoi ça ressemble ») par le « comment ça se comporte ». Application aux écrans : [Écrans](screens.md).
 
 ## 1. Une action principale par zone
 
@@ -59,6 +87,14 @@ Une liste ou un graphique vide explique pourquoi il est vide et ce qu'il faut fa
 
 Les mêmes gestes produisent les mêmes effets partout (un formulaire se comporte toujours de la même façon), et les règles d'accessibilité des [fondations](foundations.md#accessibilité) s'appliquent : contrastes, focus visible, cibles de 48 px, libellés, `role="alert"` et `role="status"`.
 
+## 11. Dire d'où vient une valeur
+
+Une même information peut venir de plusieurs sources : saisie à la main, relevé importé, banque, calcul. L'utilisateur doit pouvoir distinguer ce qu'il a saisi de ce qui a été lu ou déduit, pour savoir quoi corriger et à qui se fier. Une suggestion se présente comme telle ; un montant prévu se distingue d'un montant constaté ; une prévision montre ses hypothèses.
+
+## 12. Une action longue ou externe prévient et ne se répète pas
+
+Une action qui attend un tiers (la banque, un fichier volumineux) montre qu'elle travaille, empêche le second envoi, et dit à la fin ce qu'elle a fait en chiffres (« 12 nouvelles opérations lues »). Si elle échoue en partie, elle dit quelle partie.
+
 ## Audit de l'interface (9 novembre 2026)
 
 Relevé fait avec ces règles, puis corrigé :
@@ -82,3 +118,52 @@ Relevé fait avec ces règles, puis corrigé :
 - [x] **Règle 6** : après une valorisation sans rechargement, la confirmation de suppression annonçait un nombre de valorisations périmé → les sections de gestion se rechargent avec l'en-tête et l'historique.
 - [x] **Règle 3** : une valorisation saisie par erreur ne pouvait pas être retirée (seulement masquée par une nouvelle saisie) → suppression depuis l'historique, avec une confirmation qui cite la date et le montant.
 - [x] **Règles 1, 5, 10** : conformes (vérifié sur le tableau de bord, la page Actifs et la page d'un actif).
+
+## Audit des écrans Opérations, Catégories, Budget, Paiements, Prévisions, Banque (26 novembre 2026)
+
+Relevé fait avec les douze règles, sur les pages ajoutées depuis le premier audit. À corriger :
+
+- [x] **Règles 2 et 12** : « Lire maintenant », « Relire les 90 derniers jours » et l'import d'un relevé étaient des envois classiques, sans retour pendant l'attente et avec double envoi possible → `hx-post` et `hx-disabled-elt` comme les autres formulaires, repli sans JavaScript ; la lecture bancaire affiche « Lecture en cours… » ; un refus s'affiche sous le formulaire.
+- [x] **Règle 11** : la liste des opérations ne disait pas si une opération vient de la banque ou d'un relevé → mention discrète sous chaque libellé (« Lue chez la banque », « Importée d'un relevé »).
+- [x] **Règle 3** : le nom de la banque se tapait à la main, et une faute donnait une erreur incompréhensible → suggestions des banques du pays (EnableBanking), le texte libre restant accepté.
+- [x] **Règle 11** : sur Prévisions, « Sur quoi ça repose » était tout en bas de la page → remonté sous la courbe.
+- [~] **Règle 10** : les pages ajoutées ont été regardées à 390 px de large (Paiements, Budget, Banque, Catégories, Actifs) : les colonnes se replient en une, rien ne déborde ; un défaut trouvé (texte des listes déroulantes collé en haut du champ, corrigé). Reste à mesurer au clavier et au lecteur d'écran.
+
+Conformes : **règle 4** (messages de la banque, des paiements et des relevés en français courant, sans identifiant), **règle 6** (retirer une banque annonce que les opérations déjà lues restent), **règle 8** (la banque affiche la date de dernière lecture et les jours restants du consentement), **règle 9** (Budget, Paiements, Catégories et Prévisions guident depuis leur état vide).
+
+## Évaluation de la charge cognitive (26 novembre 2026)
+
+Estimée par lecture des templates (nombre de zones, de champs, de boutons, de notions), sans test avec un utilisateur. On distingue la charge **intrinsèque** (le sujet est compliqué) de la charge **superflue** (l'interface complique).
+
+### Ce qui garde la charge basse
+
+- **Hiérarchie typographique stable** : le texte courant et les titres de section gardent le même rôle d'une page à l'autre.
+- **Une action pleine par zone** (règle 1) : 14 boutons pleins, 10 tonals, 7 destructifs, répartis en zones.
+- **La couleur porte un sens** (erreur, avertissement, confirmation) et n'est jamais seule : le texte l'écrit aussi.
+- **Le tableau de bord n'a aucun formulaire** : total, graphique, synthèse. C'est l'écran de chaque visite.
+- **Rien n'est demandé qui se déduise** : date, devise, catégorie par règle, opérations par la banque.
+
+### Où la charge monte
+
+| Zone | Charge | Cause |
+|---|---|---|
+| Paiements | Forte, surtout intrinsèque | Échéances, suggestions, paiements, paliers, révisions, exceptions sur une seule page (245 lignes, 7 formulaires, 3 zones repliables) ; notions abstraites non expliquées avant d'être rencontrées |
+| Navigation | Moyenne (corrigée) | Sept destinations au même niveau, dont de la configuration |
+| Prévisions | Moyenne à forte | 40 à 50 chiffres (3 horizons, 3 scénarios, 13 mois) sans courbe pour les relier |
+| Vocabulaire | Moyenne | Une quinzaine de termes à apprendre : enveloppe, matelas, versement suggéré, palier, scénario, consentement |
+| Alimenter un compte | Moyenne | Deux chemins (banque, relevé) et des envois sans retour |
+| Réglages liés | Moyenne | Catégories, règles, enveloppes et épargne sur trois pages |
+
+### Pistes
+
+- [x] **Navigation** : sept destinations ramenées à quatre, plus un menu **Réglages** (Paiements, Banque, Catégories), repliable sans JavaScript.
+- [x] **Paiements** : suggestions à accepter en premier, puis le calendrier et les paiements, chacun précédé d'une phrase qui dit ce qu'il montre ; dans le formulaire d'ajout, les champs propres à un rythme, le montant variable ou révisé et la limite dans le temps sont repliés (le chemin courant tient en sept champs). Paliers et exceptions restaient déjà repliés.
+- [x] **Prévisions** : une courbe du scénario attendu avec la fourchette prudent–favorable (`chart::render_forecast`), le détail mois par mois derrière une zone repliable (règle 7).
+- [x] **Prévisions** : « Sur quoi ça repose » remonté sous la courbe (règle 11).
+- [x] **Retour pendant l'attente** sur la lecture bancaire et l'import (règles 2 et 12).
+- [x] **Glossaire intégré** : une phrase sous le titre de chaque notion — enveloppe (Budget), matelas (Épargne), règle (Catégories), échéances et paiements (Paiements), mot du libellé (formulaire), scénarios (Prévisions) — plutôt qu'une page d'aide.
+- [x] **Réglages liés** : Budget renvoie vers Catégories (« Les catégories et leurs règles se gèrent… ») et Catégories vers Budget (« Les plafonds par catégorie se fixent… »).
+
+### Limites
+
+L'évaluation vient du code, pas d'une observation. Les comptes de formulaires et de champs sont ceux des gabarits : l'affichage réel dépend du nombre de paiements, de catégories ou de comptes. À confronter à un parcours réel avant de classer les pistes.
