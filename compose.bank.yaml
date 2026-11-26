@@ -1,0 +1,20 @@
+# Connexion bancaire (EnableBanking) : à ajouter au compose principal.
+#
+#   COMPOSE_FILE=compose.yaml:compose.bank.yaml        (dans .env)
+#   ou : docker compose -f compose.yaml -f compose.bank.yaml up -d
+#
+# La clé privée reste dans ./secrets (hors de Git, droits 0600) et n'entre jamais dans l'image : elle est montée
+# en lecture seule dans /run/secrets. Le compose principal la rend lisible en lançant le conteneur avec
+# l'utilisateur de la machine (WORTHFOLD_UID / WORTHFOLD_GID).
+
+services:
+  app:
+    environment:
+      WORTHFOLD_ENABLEBANKING_APP_ID: "${WORTHFOLD_ENABLEBANKING_APP_ID:?WORTHFOLD_ENABLEBANKING_APP_ID est nécessaire avec compose.bank.yaml}"
+      WORTHFOLD_ENABLEBANKING_KEY_PATH: /run/secrets/enablebanking_key
+    secrets:
+      - enablebanking_key
+
+secrets:
+  enablebanking_key:
+    file: ./secrets/enablebanking.pem

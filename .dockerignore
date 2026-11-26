@@ -1,0 +1,26 @@
+# Tout ce qui n'entre pas dans l'image : le contexte de build reste minuscule (et rien de secret n'y passe).
+**/target
+.git
+.gitignore
+.github
+
+# Secrets et données locales
+.env
+.env.*
+!.env.example
+secrets
+*.pem
+*.db
+*.db-shm
+*.db-wal
+
+# Documentation et outillage
+docs
+*.md
+!crates/**/*.md
+LICENSE
+Dockerfile
+compose*.yaml
+.dockerignore
+.claude
+CLAUDE.md

@@ -1,0 +1,13 @@
+# Développement : publie PostgreSQL sur la machine (127.0.0.1 seulement) pour lancer `cargo run` et les tests de
+# persistance hors du conteneur.
+#
+#   docker compose -f compose.yaml -f compose.dev.yaml up -d db
+#
+#   WORTHFOLD_DATABASE_URL=postgres://worthfold:<mot de passe>@localhost:5433/worthfold cargo run -p worthfold-bootstrap
+#   WORTHFOLD_TEST_DATABASE_URL=postgres://worthfold:<mot de passe>@localhost:5433/postgres cargo nextest run
+
+services:
+  db:
+    ports:
+      # 5433 : le 5432 est souvent déjà pris par un autre Postgres de la machine.
+      - "127.0.0.1:${POSTGRES_DEV_PORT:-5433}:5432"

@@ -1,0 +1,116 @@
+# worthfold + PostgreSQL.
+#
+#   cp .env.example .env     # puis renseigner POSTGRES_PASSWORD (voir le fichier)
+#   docker compose up -d --build
+#   docker compose logs app  # le code de première configuration y est affiché
+#
+# Seul le port de l'application est publié, et seulement sur 127.0.0.1 : la base n'est joignable de nulle part
+# ailleurs que depuis l'application. Mettre un proxy HTTPS devant avant toute exposition hors de la machine
+# (voir docs/tech/deployment.md).
+
+name: worthfold
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      POSTGRES_USER: worthfold
+      POSTGRES_DB: worthfold
+      # Obligatoire : aucun mot de passe par défaut. Une valeur sûre pour une URL : `openssl rand -hex 24`.
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD est nécessaire, copie .env.example vers .env}"
+      # Somme de contrôle des pages : une corruption silencieuse du disque se détecte.
+      POSTGRES_INITDB_ARGS: --data-checksums
+    # Réglé pour une base d'une personne dans 512 Mo : peu de connexions (l'application en ouvre 8 au plus),
+    # un cache modeste, des requêtes lentes journalisées, un client oublié en transaction coupé.
+    command:
+      - postgres
+      - -c
+      - max_connections=20
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - effective_cache_size=384MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - idle_in_transaction_session_timeout=60s
+      - -c
+      - log_min_duration_statement=500ms
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U worthfold -d worthfold"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks: [backend]
+    # Système de fichiers en lecture seule, hors les trois endroits où Postgres écrit.
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run/postgresql
+    # Aucune capacité, sauf celles que l'entrypoint utilise pour préparer le dossier de données puis
+    # abandonner les droits de root.
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 512m
+    pids_limit: 100
+    logging: &logging
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  app:
+    build:
+      context: .
+    image: worthfold:local
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Le mot de passe est celui de la base : il passe par l'environnement du conteneur, jamais par l'image.
+      WORTHFOLD_DATABASE_URL: postgres://worthfold:${POSTGRES_PASSWORD}@db:5432/worthfold
+      WORTHFOLD_PORT: "3000"
+      WORTHFOLD_BIND_ADDRESS: 0.0.0.0
+      # Derrière un proxy HTTPS : l'adresse publique (https://worthfold.example.com). Vide : machine locale.
+      WORTHFOLD_PUBLIC_URL: ${WORTHFOLD_PUBLIC_URL:-}
+      # Proxys de confiance devant l'application (1 : Caddy ou Traefik) : frein des essais par adresse IP.
+      WORTHFOLD_PROXY_HOPS: ${WORTHFOLD_PROXY_HOPS:-0}
+      # Où la banque renvoie l'utilisateur, déclarée chez EnableBanking. Vide : déduite de l'adresse publique,
+      # ou http://localhost:3000/bank/callback.
+      WORTHFOLD_BANK_REDIRECT_URL: ${WORTHFOLD_BANK_REDIRECT_URL:-}
+      RUST_LOG: ${RUST_LOG:-info}
+    ports:
+      # Sur la machine seulement. Pour ouvrir à d'autres, un proxy HTTPS : pas ce port.
+      - "127.0.0.1:${PUBLISHED_PORT:-3000}:3000"
+    # Le conteneur tourne avec l'utilisateur de la machine : les secrets montés (clé de la banque en 0600)
+    # lui sont lisibles sans élargir leurs droits.
+    user: "${WORTHFOLD_UID:-1000}:${WORTHFOLD_GID:-1000}"
+    # L'application n'écrit nulle part : tout est en base.
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    pids_limit: 100
+    networks: [frontend, backend]
+    logging: *logging
+
+networks:
+  # Accès au réseau (EnableBanking) et port publié.
+  frontend:
+  # La base n'a que ce réseau, et il n'a aucune sortie : Postgres ne peut joindre personne.
+  backend:
+    internal: true
+
+volumes:
+  db-data:

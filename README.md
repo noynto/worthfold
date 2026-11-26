@@ -1,16 +1,27 @@
 # worthfold
 
-Suivi de patrimoine personnel : des actifs (comptes, livrets, titres, immobilier…) et des prêts, valorisés à des dates successives, pour connaître son patrimoine net et suivre son évolution. Application Rust (axum, askama, sqlx + SQLite), design Material 3 Expressive en Tailwind CSS, mises à jour partielles avec htmx. Utilisable sans JavaScript.
+Suivi de patrimoine personnel : des actifs (comptes, livrets, titres, immobilier…) et des prêts, valorisés à des dates successives, pour connaître son patrimoine net et suivre son évolution. Application Rust (axum, askama, sqlx + PostgreSQL), design Material 3 Expressive en Tailwind CSS, mises à jour partielles avec htmx. Utilisable sans JavaScript.
 
 Ce fichier est le sommaire de la documentation : chaque document de [`docs/`](docs/) y est référencé.
 
 ## Démarrer en local
 
+**Avec Docker** (l'application et sa base) :
+
 ```bash
+cp .env.example .env     # renseigner POSTGRES_PASSWORD : openssl rand -hex 24
+docker compose up -d --build
+docker compose logs app  # affiche le code de première configuration
+```
+
+**En développement** (`cargo run`), il faut une base PostgreSQL ; celle du compose convient :
+
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml up -d db
 cargo run -p worthfold-bootstrap
 ```
 
-Prérequis : Rust et l'exécutable autonome de Tailwind CSS (voir [Développement](docs/tech/development.md#environnement)). Puis ouvrir http://localhost:3000. Le serveur n'écoute que sur la machine locale ; la base `worthfold.db` est créée au premier lancement, à la racine du projet.
+Prérequis du développement : Rust, l'exécutable autonome de Tailwind CSS (voir [Développement](docs/tech/development.md#environnement)) et Docker pour la base. Puis ouvrir http://localhost:3000. Le serveur n'écoute que sur la machine locale. Au premier lancement, la console affiche un code : il sert à choisir le mot de passe qui protège l'application (page `/setup`).
 
 ## Commandes
 
@@ -28,11 +39,12 @@ Détails dans [Développement](docs/tech/development.md).
 
 | Couche | Technologie |
 |---|---|
-| Web | axum 0.8, un seul serveur sur `127.0.0.1`, protégé du CSRF et du DNS rebinding, arrêt propre |
+| Web | axum 0.8, un seul serveur (`127.0.0.1` par défaut), mot de passe et sessions, protégé du CSRF et du DNS rebinding, arrêt propre |
 | Templates | askama 0.16 (vérifiés à la compilation), graphique en SVG généré côté serveur |
 | Interactions | htmx 2.0.11, embarqué : formulaires sans rechargement, fragments qui se rechargent seuls |
 | Styles | Tailwind CSS 4 (exécutable autonome, compilé au build), jetons Material 3 Expressive, police Roboto Flex embarquée |
-| Persistance | SQLite via sqlx 0.9, migrations embarquées dans le binaire |
+| Persistance | PostgreSQL 17 via sqlx 0.9, migrations embarquées dans le binaire |
+| Déploiement | Image Docker (binaire statique musl dans une image distroless, non-root) et `compose.yaml` avec PostgreSQL |
 | Montants | `rust_decimal` : décimaux exacts, jamais de flottant |
 | Tests | tests intégrés à Rust, `cargo-nextest`, providers en mémoire, tests HTTP sur le routeur complet |
 | Outillage | rustup (stable), clippy, rustfmt, rust-analyzer, bacon |
@@ -55,22 +67,30 @@ Détails dans [Développement](docs/tech/development.md).
 |---|---|
 | [Architecture](docs/tech/architecture.md) | Couches, crates et sens des dépendances, cas d'usage, providers, services, ajouter une fonctionnalité |
 | [Développement](docs/tech/development.md) | Installer l'environnement (Rust, Tailwind), commandes, configuration, compilation des styles, base de données et migrations, tests |
+| [Déploiement](docs/tech/deployment.md) | Image Docker et compose (PostgreSQL), GitHub Actions, secrets, sauvegarde et restauration, reprise d'une ancienne base SQLite, HTTPS (`WORTHFOLD_PUBLIC_URL`), Kubernetes et Flux |
 | [Tâches](docs/tech/tasks.md) | Tâches one-shot (planifiées) : le même binaire, une variable d'activation, un code de sortie ; comment en ajouter une |
-| [Web](docs/tech/web.md) | Routes, htmx (fragments, formulaires, réponses), erreurs, templates, mise en forme des montants, graphique, sécurité |
+| [Web](docs/tech/web.md) | Routes, htmx (fragments, formulaires, réponses), erreurs, templates, mise en forme des montants, graphique |
+| [Sécurité](docs/tech/security.md) | Modèle de menace, authentification (mot de passe, sessions), garde des requêtes, échappement, secrets et connexion bancaire, écarts connus à corriger |
 
 ### Design
 
 | Document | Contenu |
 |---|---|
-| [Fondations](docs/design/foundations.md) | Material 3 Expressive : couleurs et contrastes, typographie, formes, mouvement, états, composants, accessibilité |
-| [Règles d'UX](docs/design/ux.md) | Dix règles de comportement (retours, prévention des erreurs, messages, fraîcheur des données…) et l'audit de l'interface |
-| [Écrans](docs/design/screens.md) | Application aux écrans : navigation, tableau de bord, page Actifs, page d'un actif (valorisation, historique), graphique |
+| [Interface (fondations)](docs/design/foundations.md) | Interface utilisateur, design system Material 3 Expressive : couleurs et contrastes, typographie, formes, mouvement, états, composants, accessibilité, audit |
+| [Expérience utilisateur](docs/design/ux.md) | Pour qui et pour quoi, parcours principaux, douze règles de comportement (retours, prévention des erreurs, messages, fraîcheur et origine des données…), audits |
+| [Écrans](docs/design/screens.md) | Application aux écrans : navigation, tableau de bord, Actifs, Opérations, Catégories, Budget, Paiements, Prévisions, Banque, graphique |
 
 ### Métier
 
 | Document | Contenu |
 |---|---|
 | [Actifs et valorisations](docs/specs/assets-and-valuations.md) | Types d'actifs, devises, historique, prêts, règles de modification et de suppression |
+| [Transactions et import de relevés](docs/specs/transactions.md) | Opérations d'un compte bancaire, import CSV (reconnaissance des colonnes, doublons, refus), solde du compte |
+| [Catégories et règles](docs/specs/categories.md) | Catégories et leur sens, règles d'affectation par libellé, classement à l'import, à la demande et à la main |
+| [Budget et épargne](docs/specs/budget.md) | Synthèse du mois, enveloppes par catégorie, matelas de sécurité évalué, versement d'épargne suggéré |
+| [Paiements prévus](docs/specs/payments.md) | Rythmes, montants par paliers et révisions, exceptions, rapprochement avec les relevés, suggestions détectées |
+| [Connexion bancaire](docs/specs/bank.md) | EnableBanking : consentement de 90 jours, rattachement des comptes, lecture des opérations et du solde, renouvellement, tâche planifiée |
+| [Prévisions de trésorerie](docs/specs/forecast.md) | Solde et patrimoine projetés mois après mois, trois scénarios, alertes de découvert et de matelas |
 | [Patrimoine net et évolution](docs/specs/net-worth.md) | Calcul du total, de l'historique, et limites actuelles |
 
 ## Licence
