@@ -135,6 +135,8 @@ mod tests {
             name: "Compte courant".into(),
             kind,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         let transactions = Arc::new(InMemoryTransactions::default());
         let valuations = Arc::new(InMemoryValuations::default());

@@ -54,7 +54,7 @@ Un seul utilisateur, un mot de passe, des sessions. Le domaine est dans la crate
 
 - **SQL** : uniquement des littéraux avec paramètres `?` (sqlx), jamais de valeur concaténée.
 - **Migrations** : une migration appliquée ne se modifie jamais (somme de contrôle) ; voir [Développement](development.md).
-- **Pas de chiffrement au repos** : PostgreSQL stocke les comptes, les opérations, les libellés et les `session_id` bancaires en clair. La protection est celle du disque, du volume Docker et des droits d'accès à la base.
+- **Pas de chiffrement au repos** : PostgreSQL stocke les comptes (y compris le numéro ou l'IBAN saisi, facultatif), les opérations, les libellés et les `session_id` bancaires en clair. L'IBAN est masqué dans les listes, mais entier sur la page du compte. La protection est celle du disque, du volume Docker et des droits d'accès à la base.
 - **Accès à la base** : l'adresse de connexion porte le mot de passe. Elle n'est jamais journalisée (les messages d'erreur de connexion ne la reprennent pas). Dans le compose, la base n'est publiée nulle part et son réseau n'a aucune sortie ; seule l'application la joint.
 - **Aucun mot de passe par défaut** : le compose refuse de démarrer sans `POSTGRES_PASSWORD`.
 - **Sauvegardes** : une sauvegarde contient tout, y compris les `session_id` bancaires et les empreintes de mot de passe. La protéger comme la base (voir [Déploiement](deployment.md#sauvegarde-et-restauration)).

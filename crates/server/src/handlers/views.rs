@@ -19,6 +19,8 @@ pub(crate) struct LineView {
     pub(crate) id: String,
     pub(crate) name: String,
     pub(crate) kind: String,
+    /// « Ma banque · •••• 2606 » pour un compte bancaire renseigné : le numéro est masqué dans les listes.
+    pub(crate) bank: Option<String>,
     pub(crate) value: String,
     pub(crate) negative: bool,
     pub(crate) valued_on: String,
@@ -51,11 +53,29 @@ pub(crate) fn date_label(date: NaiveDate) -> String {
     date.format("%d/%m/%Y").to_string()
 }
 
+/// La banque et le numéro d'un compte, sur une ligne (`masked` : numéro réduit à ses quatre derniers caractères).
+pub(crate) fn bank_line(asset: &asset::Asset, masked: bool) -> Option<String> {
+    let number = asset.account_number.as_deref().map(|number| {
+        if masked {
+            asset::Asset::mask_account_number(number)
+        } else {
+            asset::Asset::format_account_number(number)
+        }
+    });
+    match (asset.bank_name.as_deref(), number) {
+        (Some(bank), Some(number)) => Some(format!("{bank} · {number}")),
+        (Some(bank), None) => Some(bank.to_owned()),
+        (None, Some(number)) => Some(number),
+        (None, None) => None,
+    }
+}
+
 pub(crate) fn line_views(lines: Vec<Line>, today: NaiveDate) -> Vec<LineView> {
     lines
         .into_iter()
         .map(|line| LineView {
             id: line.asset.id.to_string(),
+            bank: bank_line(&line.asset, true),
             name: line.asset.name,
             kind: line.asset.kind.label().to_owned(),
             value: line

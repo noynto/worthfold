@@ -207,6 +207,8 @@ mod tests {
             name: "Livret A".into(),
             kind: AssetKind::SavingsBook,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         assets.write(&book).await.unwrap();
         assert_eq!(budget.read_savings_plan().await.unwrap(), None);

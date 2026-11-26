@@ -77,6 +77,8 @@ mod tests {
             name: id.into(),
             kind: AssetKind::Crypto,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         let valuation = |id: &str| Valuation {
             id: shared::ValuationId::generate(),
@@ -139,6 +141,8 @@ mod tests {
             name: "Livret A".into(),
             kind: AssetKind::SavingsBook,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         let plan = |destination: &str| budget::SavingsPlan {
             destination: destination.into(),

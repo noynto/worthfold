@@ -219,6 +219,8 @@ mod tests {
             name: "Compte".into(),
             kind: AssetKind::BankAccount,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         assets.write(&account).await.unwrap();
         let rent = category("Logement", CategoryKind::Expense);

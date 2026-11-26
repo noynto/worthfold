@@ -70,6 +70,8 @@ mod tests {
             name: "Livret".into(),
             kind: AssetKind::SavingsBook,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         // Saisies dans le désordre, deux à la même date (la seconde corrige la première), une d'un autre actif.
         let valuations = [

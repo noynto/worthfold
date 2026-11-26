@@ -20,6 +20,8 @@ struct AssetRow {
     name: String,
     kind: String,
     currency: String,
+    bank_name: Option<String>,
+    account_number: Option<String>,
 }
 
 impl TryFrom<AssetRow> for Asset {
@@ -31,6 +33,8 @@ impl TryFrom<AssetRow> for Asset {
             currency: row.currency.parse()?,
             id: AssetId::from(row.id),
             name: row.name,
+            bank_name: row.bank_name,
+            account_number: row.account_number,
         })
     }
 }
@@ -39,7 +43,7 @@ impl TryFrom<AssetRow> for Asset {
 impl AssetProvider for PersistedAssets {
     async fn read_all(&self) -> anyhow::Result<Vec<Asset>> {
         sqlx::query_as::<_, AssetRow>(
-            "SELECT id, name, kind, currency FROM assets ORDER BY name COLLATE \"C\"",
+            "SELECT id, name, kind, currency, bank_name, account_number FROM assets ORDER BY name COLLATE \"C\"",
         )
         .fetch_all(&self.pool)
         .await
@@ -50,24 +54,29 @@ impl AssetProvider for PersistedAssets {
     }
 
     async fn read(&self, id: &AssetId) -> anyhow::Result<Option<Asset>> {
-        sqlx::query_as::<_, AssetRow>("SELECT id, name, kind, currency FROM assets WHERE id = $1")
-            .bind(id.as_str())
-            .fetch_optional(&self.pool)
-            .await
-            .with_context(|| format!("Impossible de lire l'actif {id}."))?
-            .map(Asset::try_from)
-            .transpose()
+        sqlx::query_as::<_, AssetRow>(
+            "SELECT id, name, kind, currency, bank_name, account_number FROM assets WHERE id = $1",
+        )
+        .bind(id.as_str())
+        .fetch_optional(&self.pool)
+        .await
+        .with_context(|| format!("Impossible de lire l'actif {id}."))?
+        .map(Asset::try_from)
+        .transpose()
     }
 
     async fn write(&self, asset: &Asset) -> anyhow::Result<()> {
         sqlx::query(
-            "INSERT INTO assets (id, name, kind, currency) VALUES ($1, $2, $3, $4)
-             ON CONFLICT (id) DO UPDATE SET name = excluded.name, kind = excluded.kind, currency = excluded.currency",
+            "INSERT INTO assets (id, name, kind, currency, bank_name, account_number) VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO UPDATE SET name = excluded.name, kind = excluded.kind, currency = excluded.currency,
+             bank_name = excluded.bank_name, account_number = excluded.account_number",
         )
         .bind(asset.id.as_str())
         .bind(&asset.name)
         .bind(asset.kind.code())
         .bind(asset.currency.code())
+        .bind(&asset.bank_name)
+        .bind(&asset.account_number)
         .execute(&self.pool)
         .await
         .with_context(|| format!("Impossible d'écrire l'actif {}.", asset.id))?;
@@ -81,5 +90,38 @@ impl AssetProvider for PersistedAssets {
             .await
             .with_context(|| format!("Impossible de supprimer l'actif {id}."))?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::persistence::testdb::database;
+    use asset::AssetKind;
+    use shared::Currency;
+
+    #[tokio::test]
+    async fn la_banque_et_le_numero_font_l_aller_retour_et_peuvent_etre_retires() {
+        let Some(db) = database().await else { return };
+        let assets = PersistedAssets::new(db.pool.clone());
+        let mut account = Asset {
+            id: AssetId::generate(),
+            name: "Courant".into(),
+            kind: AssetKind::BankAccount,
+            currency: Currency::Eur,
+            bank_name: Some("Ma banque".into()),
+            account_number: Some("FR1420041010050500013M02606".into()),
+        };
+        assets.write(&account).await.unwrap();
+        assert_eq!(
+            assets.read(&account.id).await.unwrap(),
+            Some(account.clone())
+        );
+
+        account.bank_name = None;
+        account.account_number = None;
+        assets.write(&account).await.unwrap();
+        assert_eq!(assets.read_all().await.unwrap(), vec![account]);
+        db.drop_db().await;
     }
 }

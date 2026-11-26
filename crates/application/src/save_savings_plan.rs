@@ -80,6 +80,8 @@ mod tests {
             name: id.into(),
             kind,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         let budget = Arc::new(InMemoryBudget::default());
         (

@@ -71,12 +71,16 @@ mod tests {
                 name: "Livret A".into(),
                 kind: AssetKind::SavingsBook,
                 currency: Currency::Eur,
+                bank_name: None,
+                account_number: None,
             },
             Asset {
                 id: "pea".into(),
                 name: "PEA".into(),
                 kind: AssetKind::Securities,
                 currency: Currency::Eur,
+                bank_name: None,
+                account_number: None,
             },
         ];
         let valuations = [

@@ -260,6 +260,8 @@ mod tests {
                     name: "Compte".into(),
                     kind: AssetKind::BankAccount,
                     currency: Currency::Eur,
+                    bank_name: None,
+                    account_number: None,
                 }])),
                 transaction_provider: transactions.clone(),
                 valuation_provider: valuations.clone(),

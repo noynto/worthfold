@@ -117,6 +117,8 @@ mod tests {
             name: id.into(),
             kind: AssetKind::BankAccount,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         }
     }
 
@@ -171,6 +173,8 @@ mod tests {
             name: "Prêt".into(),
             kind: AssetKind::Loan,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         let assets = [asset("a"), asset("b"), loan];
         let valuations = [

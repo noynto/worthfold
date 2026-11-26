@@ -11,7 +11,7 @@
       <a href="/assets/{{ line.id }}" class="state-layer flex min-h-16 items-center gap-4 rounded-md px-4 py-4">
         <span class="min-w-0 grow">
           <span class="block break-words text-title-medium">{{ line.name }}</span>
-          <span class="block text-body-medium text-on-surface-variant">{{ line.kind }}</span>
+          <span class="block text-body-medium text-on-surface-variant">{{ line.kind }}{% if let Some(bank) = line.bank %} · {{ bank }}{% endif %}</span>
         </span>
         <span class="shrink-0 text-right">
           <span class="block whitespace-nowrap text-title-medium tabular-nums {% if line.negative %}text-error{% endif %}">{{ line.value }}</span>

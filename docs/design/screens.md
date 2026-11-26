@@ -33,9 +33,9 @@ De haut en bas, il tient sur un écran de téléphone :
 1. **Titre** « Actifs » (`headline-small`).
 2. **Bandeau** d'erreur d'un formulaire envoyé sans JavaScript, en `error-container`, `role="alert"`.
 3. **Liste** (`partials/assets.html`) : une ligne par actif, séparée par `outline-variant`. **Chaque ligne entière est un lien** vers la page de l'actif (couche d'état au survol, chevron `›`) : la liste présente, elle ne sert pas à saisir.
-   - Nom (`title-medium`) et type (`body-medium`, discret). Un nom long passe à la ligne, il n'est jamais coupé.
+   - Nom (`title-medium`) et type (`body-medium`, discret), suivi de la banque et du numéro masqué (`•••• 2606`) pour un compte bancaire renseigné. Un nom long passe à la ligne, il n'est jamais coupé.
    - Dernière valeur (`title-medium`, `error` si négative), sa date (`label-medium`) et, si besoin, « à mettre à jour » ou « jamais valorisé » en `tertiary` ([UX](ux.md), règle 8).
-4. **Carte « Ajouter un actif »** (`id="add"`) : nom, type et, quand plusieurs devises sont proposées, devise (`field` avec `field-label`) ; tant que seul l'euro est proposé, la devise n'est pas demandée et bouton plein « Ajouter ». Erreur sous le formulaire ; après un succès, le formulaire se vide et le nouvel actif apparaît dans la liste.
+4. **Carte « Ajouter un actif »** (`id="add"`) : nom, type et, quand plusieurs devises sont proposées, devise (`field` avec `field-label`) ; tant que seul l'euro est proposé, la devise n'est pas demandée. Sur une seconde ligne, la banque et le numéro de compte ou l'IBAN (facultatifs, pour un compte bancaire ; l'IBAN est vérifié). Bouton plein « Ajouter ». Erreur sous le formulaire ; après un succès, le formulaire se vide et le nouvel actif apparaît dans la liste.
 
 ## Retours communs
 
@@ -50,12 +50,12 @@ De haut en bas, il tient sur un écran de téléphone :
 De haut en bas, l'action principale juste sous la valeur actuelle :
 
 1. **Retour** « ← Tous les actifs » (l'onglet « Actifs » reste actif).
-2. **En-tête** (`partials/asset_header.html`, `xl-increased`) : le type (`label-large`), le nom (`headline-small`), la dernière valeur en grand (`display-medium`, `error` si négative), sa date et sa fraîcheur.
+2. **En-tête** (`partials/asset_header.html`, `xl-increased`) : le type (`label-large`, suivi de la banque et du numéro entier, groupé par quatre, pour un compte bancaire renseigné), le nom (`headline-small`), la dernière valeur en grand (`display-medium`, `error` si négative), sa date et sa fraîcheur.
    Pour un **compte bancaire**, une ligne « Opérations du compte › » suit l'en-tête et mène à la page des opérations.
 3. **Nouvelle valorisation** : montant, avec le symbole de la devise dans le libellé (« Montant (€) », « Capital restant dû (€) » pour un prêt) et date (limitée au jour même), avec des libellés visibles, et le bouton plein « Enregistrer ». Un refus s'affiche sous le formulaire et la saisie reste ; un succès vide le montant, met à jour l'en-tête et l'historique sans recharger la page, et confirme dans la snackbar.
 4. **Historique** (`partials/asset_history.html`) : toutes les valorisations, de la plus récente à la plus ancienne. Chacune montre sa date, sa valeur et l'écart avec la précédente (« +2 450,00 € », en `error` s'il est négatif, « inchangée » s'il est nul). Pour un prêt, un remboursement donne un écart positif : la dette baisse, le patrimoine monte. Vide : « Aucune valorisation pour l'instant : saisis la première ci-dessus ».
    - Chaque ligne a un bouton texte « Supprimer » (`btn-text-error`, nom accessible « Supprimer la valorisation du … ») pour corriger une saisie erronée, avec une confirmation qui cite la date et le montant. Un refus s'affiche en haut de l'historique ; un succès met à jour l'en-tête, l'historique et les sections de gestion sans recharger la page.
-5. **Modifier le nom ou le type** (`partials/asset_manage.html`) : section repliée (`<details>`, secondaire). Quand plusieurs devises sont proposées, la devise s'y ajoute (« Modifier le nom, le type ou la devise ») ; une devise figée s'affiche alors en texte, avec la raison. Après un succès, la page se recharge avec la confirmation.
+5. **Modifier le nom ou le type** (`partials/asset_manage.html`) : section repliée (`<details>`, secondaire). Quand plusieurs devises sont proposées, la devise s'y ajoute (« Modifier le nom, le type ou la devise ») ; une devise figée s'affiche alors en texte, avec la raison. Pour un compte bancaire, la banque et le numéro s'y modifient aussi (champs vides : non renseignés). Après un succès, la page se recharge avec la confirmation.
 6. **Supprimer** : ce qui sera perdu, chiffré et accordé (« son historique : 3 valorisations », « aucune valorisation »), et bouton `btn-outlined-error`, avec confirmation par `hx-confirm` (voir [Web](../tech/web.md#htmx)). Après un succès, retour à la page Actifs, avec la confirmation dans la snackbar.
 
 En-tête, historique et sections de gestion se rechargent ensemble après une valorisation : le nombre de valorisations annoncé et le verrou de la devise restent justes sans recharger la page.

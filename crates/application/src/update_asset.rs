@@ -4,6 +4,7 @@ use asset::{Asset, AssetKind, AssetProvider};
 use shared::{AssetId, Currency};
 use valuation::ValuationProvider;
 
+use crate::bank_details::bank_details;
 use crate::{NOT_FOUND, UseCaseError};
 
 pub struct UpdateAsset {
@@ -16,6 +17,9 @@ pub struct Command {
     pub name: String,
     pub kind: AssetKind,
     pub currency: Currency,
+    /// Banque et numéro de compte, tels que saisis : retenus pour un compte bancaire seulement.
+    pub bank_name: String,
+    pub account_number: String,
 }
 
 pub struct Output {
@@ -26,6 +30,8 @@ impl UpdateAsset {
     pub async fn handle(&self, command: Command) -> Result<Output, UseCaseError> {
         // 1. Vérification de la commande.
         let name = Asset::validate_name(&command.name).map_err(UseCaseError::Refusal)?;
+        let (bank_name, account_number) =
+            bank_details(command.kind, &command.bank_name, &command.account_number)?;
         // 2. Résolution de l'actif.
         let mut asset = self
             .asset_provider
@@ -60,6 +66,8 @@ impl UpdateAsset {
         asset.name = name;
         asset.kind = command.kind;
         asset.currency = command.currency;
+        asset.bank_name = bank_name;
+        asset.account_number = account_number;
         self.asset_provider.write(&asset).await?;
         Ok(Output { asset })
     }
@@ -80,6 +88,8 @@ mod tests {
             name: "Livret".into(),
             kind: AssetKind::SavingsBook,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         }
     }
 
@@ -89,6 +99,8 @@ mod tests {
             name: name.into(),
             kind: AssetKind::BankAccount,
             currency,
+            bank_name: String::new(),
+            account_number: String::new(),
         }
     }
 

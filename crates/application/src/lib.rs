@@ -9,6 +9,7 @@ pub mod add_category_rule;
 pub mod add_default_categories;
 pub mod add_planned_payment;
 pub mod apply_category_rules;
+mod bank_details;
 pub mod categorize_transaction;
 pub mod change_password;
 pub mod check_session;

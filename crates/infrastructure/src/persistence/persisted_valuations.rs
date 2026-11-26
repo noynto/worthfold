@@ -135,6 +135,8 @@ mod tests {
             name: "Livret A".into(),
             kind: AssetKind::SavingsBook,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         assets.write(&asset).await.unwrap();
         let first = valuation(&asset, 123_456);

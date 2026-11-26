@@ -79,6 +79,8 @@ mod tests {
             name: "Compte courant".into(),
             kind: AssetKind::BankAccount,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         let valuations = Arc::new(InMemoryValuations::default());
         let use_case = RecordValuation {
@@ -110,6 +112,8 @@ mod tests {
             name: "Actif".into(),
             kind,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         RecordValuation {
             asset_provider: Arc::new(InMemoryAssets::with([asset])),

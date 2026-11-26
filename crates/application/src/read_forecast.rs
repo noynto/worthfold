@@ -136,6 +136,8 @@ mod tests {
             name: id.into(),
             kind,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         let valuation = |id: &str, amount| Valuation {
             id: shared::ValuationId::generate(),
@@ -202,6 +204,8 @@ mod tests {
             name: id.into(),
             kind,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         let transactions = Arc::new(InMemoryTransactions::default());
         transactions

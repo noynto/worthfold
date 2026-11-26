@@ -133,6 +133,8 @@ mod tests {
             name: id.into(),
             kind,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         let category = |id: &str, kind| Category {
             id: id.into(),

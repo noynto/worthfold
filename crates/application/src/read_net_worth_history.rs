@@ -49,6 +49,8 @@ mod tests {
                 name: "Livret".into(),
                 kind: AssetKind::SavingsBook,
                 currency: Currency::Eur,
+                bank_name: None,
+                account_number: None,
             }])),
             valuation_provider: Arc::new(InMemoryValuations::with([Valuation {
                 id: shared::ValuationId::generate(),

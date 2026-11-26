@@ -14,7 +14,7 @@ use super::AppState;
 use super::assets_page::AssetForm;
 use super::reply::{Reply, not_found, render, technical_page};
 use super::views::{
-    ErrorParams, currency_options, date_label, freshness, iso_date, kind_options, today,
+    ErrorParams, bank_line, currency_options, date_label, freshness, iso_date, kind_options, today,
     with_flash_consumed,
 };
 use crate::{flash, format};
@@ -26,6 +26,8 @@ struct AssetDetail {
     id: String,
     name: String,
     kind_label: &'static str,
+    /// « Ma banque · FR76 3000 … » : le numéro entier, la page étant celle du compte.
+    bank: Option<String>,
     value: String,
     negative: bool,
     valued_on: String,
@@ -36,6 +38,9 @@ struct AssetDetail {
     /// Un compte bancaire a des opérations (page `/assets/{id}/transactions`).
     has_transactions: bool,
     currency: &'static str,
+    /// Valeurs actuelles des champs de modification (le numéro est montré groupé par quatre).
+    bank_name: String,
+    account_number: String,
     /// Devise et sens figés dès la première valorisation.
     currency_locked: bool,
     /// « aucune valorisation », « 1 valorisation », « 3 valorisations ».
@@ -97,6 +102,7 @@ fn asset_detail(output: &read_asset::Output, today: NaiveDate) -> AssetDetail {
         id: output.asset.id.to_string(),
         name: output.asset.name.clone(),
         kind_label: output.asset.kind.label(),
+        bank: bank_line(&output.asset, false),
         value: latest.map_or_else(|| "—".to_owned(), |v| format::money(&v.value)),
         negative: latest.is_some_and(|v| v.value.amount.is_sign_negative()),
         valued_on: latest.map_or_else(String::new, |v| date_label(v.valued_on)),
@@ -105,6 +111,13 @@ fn asset_detail(output: &read_asset::Output, today: NaiveDate) -> AssetDetail {
         kind_code: output.asset.kind.code(),
         has_transactions: output.asset.kind == AssetKind::BankAccount,
         currency: output.asset.currency.code(),
+        bank_name: output.asset.bank_name.clone().unwrap_or_default(),
+        account_number: output
+            .asset
+            .account_number
+            .as_deref()
+            .map(asset::Asset::format_account_number)
+            .unwrap_or_default(),
         currency_locked: count > 0,
         valuations: format::count(count, "valorisation", "valorisations"),
         delete_confirm: match count {
@@ -217,6 +230,8 @@ pub async fn post_asset_update(
         name: form.name,
         kind,
         currency,
+        bank_name: form.bank_name,
+        account_number: form.account_number,
     };
     match app.update_asset.handle(command).await {
         Ok(output) => reply.redirect(&page, &format!("« {} » enregistré.", output.asset.name)),

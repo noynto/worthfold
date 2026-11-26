@@ -485,6 +485,8 @@ mod tests {
             name: "Compte".into(),
             kind: AssetKind::BankAccount,
             currency: Currency::Eur,
+            bank_name: None,
+            account_number: None,
         };
         PersistedAssets::new(pool.clone())
             .write(&account)

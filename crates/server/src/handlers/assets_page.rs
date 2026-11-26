@@ -79,6 +79,11 @@ pub struct AssetForm {
     pub(crate) name: String,
     pub(crate) kind: String,
     pub(crate) currency: String,
+    /// Banque et numéro : pour un compte bancaire (ignorés pour les autres types).
+    #[serde(default)]
+    pub(crate) bank_name: String,
+    #[serde(default)]
+    pub(crate) account_number: String,
 }
 
 pub async fn post_asset(
@@ -97,6 +102,8 @@ pub async fn post_asset(
         name: form.name,
         kind,
         currency,
+        bank_name: form.bank_name,
+        account_number: form.account_number,
     };
     match app.add_asset.handle(command).await {
         Ok(output) => reply.worth_changed(&format!(

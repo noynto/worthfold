@@ -1835,3 +1835,63 @@ async fn un_client_qui_s_acharne_est_freine_sans_bloquer_le_proprietaire() {
         .unwrap();
     assert_eq!(response.headers()[header::LOCATION], "/");
 }
+
+// ── Banque et numéro d'un compte bancaire ───────────────────────────────────
+
+const BANK_ACCOUNT: &str = "name=Courant&kind=bank_account&currency=EUR&bank_name=Ma+banque&account_number=fr14+2004+1010+0505+0001+3m02+606";
+
+#[tokio::test]
+async fn un_compte_montre_son_numero_masque_en_liste_et_en_entier_sur_sa_page() {
+    let app = app();
+    let response = app
+        .clone()
+        .oneshot(post("/assets", BANK_ACCOUNT, false))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+    let list = body(app.clone().oneshot(get("/assets")).await.unwrap()).await;
+    assert!(list.contains("Ma banque · •••• 2606"), "{list}");
+    assert!(
+        !list.contains("FR14 2004"),
+        "le numéro entier ne figure pas dans la liste"
+    );
+
+    let id = list
+        .split("href=\"/assets/")
+        .nth(1)
+        .and_then(|rest| rest.split('"').next())
+        .unwrap()
+        .to_owned();
+    let page = body(
+        app.clone()
+            .oneshot(get(&format!("/assets/{id}")))
+            .await
+            .unwrap(),
+    )
+    .await;
+    assert!(
+        page.contains("Ma banque · FR14 2004 1010 0505 0001 3M02 606"),
+        "{page}"
+    );
+    // Le formulaire de modification est prérempli.
+    assert!(page.contains("value=\"Ma banque\""));
+    assert!(page.contains("value=\"FR14 2004 1010 0505 0001 3M02 606\""));
+}
+
+#[tokio::test]
+async fn un_iban_mal_recopie_est_refuse_avec_le_message() {
+    let form = "name=Courant&kind=bank_account&currency=EUR&bank_name=&account_number=FR1420041010050500013M02607";
+    let response = app().oneshot(post("/assets", form, true)).await.unwrap();
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(body(response).await.contains("IBAN"));
+}
+
+#[tokio::test]
+async fn un_formulaire_sans_banque_ni_numero_reste_accepte() {
+    let response = app()
+        .oneshot(post("/assets", VALID_ASSET, false))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+}
