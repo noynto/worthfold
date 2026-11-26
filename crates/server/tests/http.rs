@@ -1895,3 +1895,23 @@ async fn un_formulaire_sans_banque_ni_numero_reste_accepte() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
 }
+
+#[tokio::test]
+async fn le_premier_mois_d_un_rythme_se_choisit_dans_une_liste_et_non_dans_un_champ_mois() {
+    // Le formulaire n'apparaît que s'il y a un compte bancaire où ranger le paiement.
+    let app = app();
+    app.clone()
+        .oneshot(post("/assets", BANK_ACCOUNT, false))
+        .await
+        .unwrap();
+    let page = body(app.oneshot(get("/payments")).await.unwrap()).await;
+    // `<input type="month">` n'existe pas dans Firefox ni Safari de bureau : on y taperait du texte.
+    assert!(!page.contains("type=\"month\""));
+    let select = page
+        .split("name=\"first_month\"")
+        .nth(1)
+        .and_then(|rest| rest.split("</select>").next())
+        .unwrap();
+    assert!(select.contains("décembre"));
+    assert!(select.matches("<option value=\"20").count() >= 36);
+}

@@ -27,7 +27,7 @@ Deux paiements du même compte, du même sens et reconnus par le même mot sont 
 
 - Le **jour** est un jour du mois (1 à 31) ou **le dernier jour du mois**. Dans un mois plus court, « le 31 » devient le dernier jour (le 28 février, le 29 en année bissextile) : une échéance ne saute jamais un mois.
 - Pour « certains mois », le formulaire demande une **plage** (« de novembre à février ») : elle peut passer le 31 décembre.
-- Le rythme « tous les N mois » est ancré sur son **premier mois** : c'est lui qui fixe les mois suivants, jamais avant.
+- Le rythme « tous les N mois » est ancré sur son **premier mois** : c'est lui qui fixe les mois suivants, jamais avant. Il se choisit dans une liste (du douzième mois passé au vingt-quatrième à venir), et non dans un champ `type="month"` que Firefox et Safari de bureau n'affichent pas comme un sélecteur.
 
 ## Combien (`Amount`)
 

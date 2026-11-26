@@ -13,7 +13,7 @@ use axum::Form;
 use axum::extract::{Path, Query, State};
 use axum::http::HeaderMap;
 use axum::response::Response;
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 use recurrence::{Amount, AmountStep, DayOfMonth, Direction, Revision, Schedule, Window};
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -22,7 +22,7 @@ use shared::{Currency, Money};
 use super::AppState;
 use super::reply::{Reply, render, technical_page};
 use super::views::{
-    ErrorParams, date_label, iso_date, month_label, parse_amount, parse_month, today,
+    ErrorParams, date_label, iso_date, month_label, month_slug, parse_amount, parse_month, today,
     with_flash_consumed,
 };
 use crate::{flash, format};
@@ -203,6 +203,8 @@ struct PaymentsPage {
     /// Les catégories : identifiant, nom, et son sens (pour guider le choix).
     categories: Vec<(String, String)>,
     months: Vec<(u32, &'static str)>,
+    /// Les mois proposés pour le premier mois d'un rythme « Tous les N mois » : identifiant (`2026-12`) et libellé.
+    first_months: Vec<(String, String)>,
     days: Vec<u32>,
     today_iso: String,
     error: Option<String>,
@@ -334,12 +336,31 @@ pub async fn get_payments_page(
             .enumerate()
             .map(|(i, name)| (i as u32 + 1, *name))
             .collect(),
+        first_months: first_month_options(today),
         days: (1..=31).collect(),
         today_iso: iso_date(today),
         error: params.error,
         flash,
     });
     with_flash_consumed(page, had_flash)
+}
+
+/// Du douzième mois passé au vingt-quatrième mois à venir : un rythme peut avoir commencé l'an dernier.
+/// Une liste plutôt qu'un `<input type="month">`, que Firefox et Safari de bureau n'affichent pas comme un
+/// sélecteur de mois (on y tape alors du texte que le serveur ne comprend pas).
+fn first_month_options(today: NaiveDate) -> Vec<(String, String)> {
+    let this_month = today.with_day(1).unwrap_or(today);
+    (-12..=24)
+        .filter_map(|offset: i32| {
+            let months = chrono::Months::new(offset.unsigned_abs());
+            if offset < 0 {
+                this_month.checked_sub_months(months)
+            } else {
+                this_month.checked_add_months(months)
+            }
+        })
+        .map(|month| (month_slug(month), month_label(month)))
+        .collect()
 }
 
 // ── POST /payments ───────────────────────────────────────────────────────────
@@ -682,5 +703,22 @@ pub async fn post_suggestion(
     {
         Ok(output) => reply.redirect(PAGE, &format!("« {} » ajouté.", output.payment.label)),
         Err(e) => reply.error(e),
+    }
+}
+
+#[cfg(test)]
+mod first_month_tests {
+    use super::*;
+
+    #[test]
+    fn les_mois_proposes_vont_de_l_an_dernier_a_dans_deux_ans_et_se_relisent() {
+        let today = NaiveDate::from_ymd_opt(2026, 11, 26).unwrap();
+        let options = first_month_options(today);
+        assert_eq!(options.len(), 37);
+        assert_eq!(options.first().unwrap().0, "2025-11");
+        assert_eq!(options.last().unwrap().0, "2028-11");
+        assert!(options.contains(&("2026-12".to_owned(), "décembre 2026".to_owned())));
+        // Chaque identifiant est celui que `parse_month` sait relire.
+        assert!(options.iter().all(|(slug, _)| parse_month(slug).is_some()));
     }
 }

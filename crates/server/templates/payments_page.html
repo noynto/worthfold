@@ -188,7 +188,10 @@
           <input class="field" name="every_n" inputmode="numeric" placeholder="3">
         </label>
         <label class="field-label">Si « Tous les N mois » : premier mois
-          <input class="field" name="first_month" type="month">
+          <select class="field" name="first_month">
+            <option value="">Choisir…</option>
+            {% for month in first_months %}<option value="{{ month.0 }}">{{ month.1 }}</option>{% endfor %}
+          </select>
         </label>
         <label class="field-label">Si « Certains mois » : du mois de
           <select class="field" name="month_from">
