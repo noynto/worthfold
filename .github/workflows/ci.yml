@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # Les tests de persistance ont besoin d'un vrai PostgreSQL : sans WORTHFOLD_TEST_DATABASE_URL ils sont
+    # ignorés en silence. Chaque test crée et supprime sa propre base, le rôle doit donc pouvoir créer des bases.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: worthfold
+          POSTGRES_PASSWORD: worthfold
+          POSTGRES_DB: worthfold_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U worthfold"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      WORTHFOLD_TEST_DATABASE_URL: postgres://worthfold:worthfold@localhost:5432/worthfold_ci
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Rust
+        run: rustup toolchain install stable --profile minimal --component clippy,rustfmt
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+
+      # Même version et même vérification d'empreinte que le Dockerfile (build.rs compile la feuille de style).
+      - name: Install Tailwind CSS
+        run: |
+          set -eu
+          version="$(sed -n 's/^ARG TAILWIND_VERSION=//p' Dockerfile)"
+          base="https://github.com/tailwindlabs/tailwindcss/releases/download/${version}"
+          cd "$RUNNER_TEMP"
+          curl -sSfLO "${base}/tailwindcss-linux-x64"
+          curl -sSfLO "${base}/sha256sums.txt"
+          grep ' \(\./\)\?tailwindcss-linux-x64$' sha256sums.txt | sed 's#\./##' | sha256sum -c -
+          mkdir -p "$HOME/.local/bin"
+          install -m 755 tailwindcss-linux-x64 "$HOME/.local/bin/tailwindcss"
+          echo "TAILWINDCSS=$HOME/.local/bin/tailwindcss" >> "$GITHUB_ENV"
+
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Tests
+        run: cargo nextest run --workspace --locked --no-tests=fail
+
+      - name: Rapport summary
+        if: always()
+        run: |
+          {
+            echo "# 📋 Rapport CI — ${{ github.repository }}"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Commit** | ${{ github.sha }} |"
+            echo "| **Auteur** | ${{ github.actor }} |"
+            echo "| **Branche** | ${{ github.ref_name }} |"
+            echo "| **Base de test** | PostgreSQL 17 (tests de persistance exécutés) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Vérifie que l'image se construit, sans la publier (la publication se fait dans « Release »).
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          cache-from: type=gha,scope=ci
+          cache-to: type=gha,mode=max,scope=ci
