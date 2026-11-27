@@ -6,9 +6,10 @@ use application::{AuthPorts, UseCases};
 use bank::BankAggregator;
 use infrastructure::argon2_hasher::Argon2Hasher;
 use infrastructure::enablebanking::EnableBanking;
+use infrastructure::pdf_reader::PdfExtractReader;
 use infrastructure::persistence::{
     self, PersistedAssets, PersistedAuth, PersistedBank, PersistedBudget, PersistedCategories,
-    PersistedRecurrence, PersistedTransactions, PersistedValuations,
+    PersistedInstitutions, PersistedRecurrence, PersistedTransactions, PersistedValuations,
 };
 
 use crate::config::{BankConfig, Config};
@@ -31,6 +32,8 @@ pub async fn build(config: &Config) -> anyhow::Result<Assembled> {
         Arc::new(PersistedBudget::new(pool.clone())),
         Arc::new(PersistedRecurrence::new(pool.clone())),
         Arc::new(PersistedBank::new(pool.clone())),
+        Arc::new(PersistedInstitutions::new(pool.clone())),
+        Arc::new(PdfExtractReader),
         aggregator,
         AuthPorts {
             provider: Arc::new(PersistedAuth::new(pool)),

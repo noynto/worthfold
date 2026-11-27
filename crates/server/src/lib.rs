@@ -90,6 +90,18 @@ pub fn router_exposed(use_cases: Arc<UseCases>, exposure: Exposure) -> Router {
             "/payments/{id}/occurrences/{date}",
             post(handlers::post_occurrence),
         )
+        .route(
+            "/banks",
+            get(handlers::get_banks_page).post(handlers::post_institution),
+        )
+        .route(
+            "/banks/{name}/update",
+            post(handlers::post_institution_update),
+        )
+        .route(
+            "/banks/{name}/delete",
+            post(handlers::post_institution_delete),
+        )
         .route("/bank", get(handlers::get_bank_page))
         .route("/bank/connect", post(handlers::post_bank_connect))
         .route("/fragments/banks", get(handlers::get_banks_fragment))

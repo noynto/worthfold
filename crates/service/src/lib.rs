@@ -2,6 +2,7 @@
 //! sans provider ni entrée-sortie : des objets déjà lus en entrée, une valeur en sortie.
 
 pub mod bank_csv;
+pub mod bank_pdf;
 pub mod budget;
 pub mod forecast;
 pub mod recurrence;

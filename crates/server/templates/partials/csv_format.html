@@ -1,0 +1,81 @@
+{# Les réglages CSV d'une banque : partagés par l'ajout et la modification. Variables : `f` (FormatView) et les listes d'options. #}
+<div class="grid gap-3 md:grid-cols-2">
+  <label class="field-label">Encodage
+    <select class="field" name="encoding">
+      {% for o in encodings %}<option value="{{ o.0 }}"{% if o.0 == f.encoding %} selected{% endif %}>{{ o.1 }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field-label">Séparateur de colonnes
+    <select class="field" name="delimiter">
+      {% for o in delimiters %}<option value="{{ o.0 }}"{% if o.0 == f.delimiter %} selected{% endif %}>{{ o.1 }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field-label">Ligne de l'en-tête <span class="text-on-surface-variant">(1 si la première ligne nomme les colonnes)</span>
+    <input class="field" name="header_line" type="number" min="1" max="100" required value="{{ f.header_line }}">
+  </label>
+  <label class="field-label">Écriture des dates
+    <select class="field" name="date_format">
+      {% for o in date_formats %}<option value="{{ o.0 }}"{% if o.0 == f.date_format %} selected{% endif %}>{{ o.1 }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field-label">Colonne de la date
+    <input class="field" name="date_column" required maxlength="100" value="{{ f.date_column }}" autocomplete="off">
+  </label>
+  <label class="field-label">Colonne du libellé
+    <input class="field" name="label_column" required maxlength="100" value="{{ f.label_column }}" autocomplete="off">
+  </label>
+  <label class="field-label">Séparateur des décimales
+    <select class="field" name="decimal_separator">
+      {% for o in decimal_separators %}<option value="{{ o.0 }}"{% if o.0 == f.decimal_separator %} selected{% endif %}>{{ o.1 }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field-label">Montant
+    <select class="field" name="amount_mode">
+      <option value="signed"{% if !f.split %} selected{% endif %}>Une colonne, signée</option>
+      <option value="debit_credit"{% if f.split %} selected{% endif %}>Deux colonnes : débit et crédit</option>
+    </select>
+  </label>
+  <label class="field-label">Colonne du montant <span class="text-on-surface-variant">(une colonne)</span>
+    <input class="field" name="amount_column" maxlength="100" value="{{ f.amount_column }}" autocomplete="off">
+  </label>
+  <div class="grid gap-3 md:grid-cols-2">
+    <label class="field-label">Colonne du débit <span class="text-on-surface-variant">(deux colonnes)</span>
+      <input class="field" name="debit_column" maxlength="100" value="{{ f.debit_column }}" autocomplete="off">
+    </label>
+    <label class="field-label">Colonne du crédit
+      <input class="field" name="credit_column" maxlength="100" value="{{ f.credit_column }}" autocomplete="off">
+    </label>
+  </div>
+</div>
+<label class="mt-3 flex items-center gap-3 text-body-medium">
+  <input type="checkbox" name="invert_sign"{% if f.invert_sign %} checked{% endif %}>
+  Les dépenses sont notées en positif (inverser le signe des montants, pour une colonne signée)
+</label>
+
+<fieldset class="mt-4 rounded-lg border border-outline-variant p-4">
+  <legend class="px-2 text-title-small">Relevé PDF (facultatif)</legend>
+  <label class="flex items-center gap-3 text-body-medium">
+    <input type="checkbox" name="pdf_enabled"{% if f.pdf_enabled %} checked{% endif %}>
+    Cette banque fournit des relevés PDF que je veux importer
+  </label>
+  <p class="mt-2 text-body-medium text-on-surface-variant">Un PDF n'a pas de colonnes : je les retrouve à la position des en-têtes « Débit » et « Crédit ». Le relevé n'est importé que si le solde de départ, les opérations et le solde final s'accordent. Le PDF doit contenir du texte sélectionnable (pas une image scannée).</p>
+  <div class="mt-3 grid gap-3 md:grid-cols-2">
+    <label class="field-label">Dates des opérations (sans l'année)
+      <select class="field" name="pdf_date_separator">
+        {% for o in day_separators %}<option value="{{ o.0 }}"{% if o.0 == f.pdf_date_separator %} selected{% endif %}>{{ o.1 }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="field-label">En-tête de la colonne des débits
+      <input class="field" name="pdf_debit_header" maxlength="100" value="{{ f.pdf_debit_header }}" autocomplete="off">
+    </label>
+    <label class="field-label">En-tête de la colonne des crédits
+      <input class="field" name="pdf_credit_header" maxlength="100" value="{{ f.pdf_credit_header }}" autocomplete="off">
+    </label>
+    <label class="field-label">Les lignes de solde commencent par
+      <input class="field" name="pdf_balance_marker" maxlength="100" value="{{ f.pdf_balance_marker }}" autocomplete="off">
+    </label>
+    <label class="field-label">La ligne qui termine le tableau commence par
+      <input class="field" name="pdf_end_marker" maxlength="100" value="{{ f.pdf_end_marker }}" autocomplete="off">
+    </label>
+  </div>
+</fieldset>

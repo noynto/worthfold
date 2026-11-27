@@ -17,6 +17,7 @@ mod budget;
 mod categories;
 mod dashboard;
 mod forecast;
+mod institutions;
 mod payments;
 mod reply;
 mod transactions;
@@ -43,6 +44,9 @@ pub use dashboard::{
     get_chart_fragment, get_dashboard, get_net_worth_chart, get_net_worth_fragment,
 };
 pub use forecast::get_forecast_page;
+pub use institutions::{
+    get_banks_page, post_institution, post_institution_delete, post_institution_update,
+};
 pub use payments::{
     get_payments_page, post_occurrence, post_payment, post_payment_delete, post_payment_step,
     post_suggestion,

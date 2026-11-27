@@ -1,5 +1,7 @@
 # Connexion bancaire
 
+> **Reportée** : pour le moment, l'application se concentre sur l'import de relevés CSV ([Banques et format CSV](banks.md)). Cette connexion reste en place mais n'est plus la voie principale.
+
 worthfold peut lire les opérations et le solde de tes comptes directement chez ta banque, par l'agrégateur **EnableBanking** (accès aux comptes, lecture seule). Les opérations lues deviennent des [transactions](transactions.md) ordinaires : classées par les mêmes règles, comptées dans le budget et le prévisionnel. L'import CSV reste disponible, et les deux peuvent se compléter. Le port `BankAggregator` (crate `bank`) isole l'agrégateur : EnableBanking n'est qu'un adaptateur (`infrastructure::enablebanking`).
 
 ## Configuration

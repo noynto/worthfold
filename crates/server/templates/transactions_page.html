@@ -15,11 +15,15 @@
 {# Action principale de la page (règle d'UX 1) : importer un relevé, avant la liste qui s'allonge. #}
 <section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="import-title">
   <h2 id="import-title" class="px-2 pb-1 text-title-medium">Importer un relevé</h2>
-  <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Le fichier CSV exporté de ta banque. Un relevé qui recouvre le précédent n'ajoute pas de doublons.</p>
+  {% if let Some(bank) = bank_name %}
+  <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Le relevé CSV (ou PDF, si la banque est réglée pour) de {{ bank }}, lu selon <a href="/banks" class="text-primary hover:underline">les réglages de cette banque</a>. Un relevé qui recouvre le précédent n'ajoute pas de doublons.</p>
+  {% else %}
+  <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Ce compte n'a pas de banque : <a href="/assets/{{ id }}" class="text-primary hover:underline">choisis-la sur la page du compte</a> (ou <a href="/banks" class="text-primary hover:underline">ajoute-la d'abord</a>) pour que je sache lire ses relevés.</p>
+  {% endif %}
   <form class="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="/assets/{{ id }}/transactions/import" enctype="multipart/form-data"
         hx-post="/assets/{{ id }}/transactions/import" hx-encoding="multipart/form-data" hx-target="#error-import" hx-swap="innerHTML" hx-disabled-elt="find button">
-    <label class="field-label">Fichier CSV
-      <input class="field" name="statement" type="file" accept=".csv,text/csv" required>
+    <label class="field-label">Relevé (CSV ou PDF)
+      <input class="field" name="statement" type="file" accept=".csv,text/csv,.pdf,application/pdf" required>
     </label>
     <label class="field-label">Solde après la dernière opération (facultatif)
       <input class="field" name="closing_balance" inputmode="decimal" placeholder="1 234,56">

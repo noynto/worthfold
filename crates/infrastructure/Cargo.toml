@@ -6,6 +6,7 @@ publish.workspace = true
 license.workspace = true
 
 [dependencies]
+pdf-extract = "0.9.0"
 anyhow = "1.0.104"
 asset = { package = "worthfold-asset", path = "../asset" }
 async-trait = "0.1.92"
@@ -15,6 +16,7 @@ shared = { package = "worthfold-shared", path = "../shared" }
 sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "postgres", "macros", "migrate", "chrono", "rust_decimal"] }
 budget = { package = "worthfold-budget", path = "../budget" }
 category = { package = "worthfold-category", path = "../category" }
+institution = { package = "worthfold-institution", path = "../institution" }
 transaction = { package = "worthfold-transaction", path = "../transaction" }
 valuation = { package = "worthfold-valuation", path = "../valuation" }
 jsonwebtoken = { version = "12.0.0", features = ["rust_crypto"] }

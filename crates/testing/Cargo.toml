@@ -14,6 +14,7 @@ shared = { package = "worthfold-shared", path = "../shared" }
 chrono = "0.4.45"
 budget = { package = "worthfold-budget", path = "../budget" }
 category = { package = "worthfold-category", path = "../category" }
+institution = { package = "worthfold-institution", path = "../institution" }
 transaction = { package = "worthfold-transaction", path = "../transaction" }
 valuation = { package = "worthfold-valuation", path = "../valuation" }
 bank = { package = "worthfold-bank", path = "../bank" }

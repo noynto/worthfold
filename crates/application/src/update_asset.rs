@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use asset::{Asset, AssetKind, AssetProvider};
+use institution::InstitutionProvider;
 use shared::{AssetId, Currency};
 use valuation::ValuationProvider;
 
@@ -10,6 +11,7 @@ use crate::{NOT_FOUND, UseCaseError};
 pub struct UpdateAsset {
     pub asset_provider: Arc<dyn AssetProvider>,
     pub valuation_provider: Arc<dyn ValuationProvider>,
+    pub institution_provider: Arc<dyn InstitutionProvider>,
 }
 
 pub struct Command {
@@ -30,8 +32,13 @@ impl UpdateAsset {
     pub async fn handle(&self, command: Command) -> Result<Output, UseCaseError> {
         // 1. Vérification de la commande.
         let name = Asset::validate_name(&command.name).map_err(UseCaseError::Refusal)?;
-        let (bank_name, account_number) =
-            bank_details(command.kind, &command.bank_name, &command.account_number)?;
+        let (bank_name, account_number) = bank_details(
+            self.institution_provider.as_ref(),
+            command.kind,
+            &command.bank_name,
+            &command.account_number,
+        )
+        .await?;
         // 2. Résolution de l'actif.
         let mut asset = self
             .asset_provider
@@ -110,6 +117,7 @@ mod tests {
         let use_case = UpdateAsset {
             asset_provider: assets.clone(),
             valuation_provider: Arc::new(InMemoryValuations::default()),
+            institution_provider: Arc::new(testing::InMemoryInstitutions::default()),
         };
 
         use_case
@@ -135,6 +143,7 @@ mod tests {
         let use_case = UpdateAsset {
             asset_provider: Arc::new(InMemoryAssets::with([livret()])),
             valuation_provider: Arc::new(InMemoryValuations::with([valuation])),
+            institution_provider: Arc::new(testing::InMemoryInstitutions::default()),
         };
 
         // Un avoir valorisé ne devient pas un prêt.

@@ -13,6 +13,7 @@ asset = { package = "worthfold-asset", path = "../asset" }
 axum = { version = "0.8.9", features = ["multipart"] }
 budget = { package = "worthfold-budget", path = "../budget" }
 category = { package = "worthfold-category", path = "../category" }
+institution = { package = "worthfold-institution", path = "../institution" }
 chrono = "0.4.45"
 rust_decimal = "1.43.0"
 serde = { version = "1.0.229", features = ["derive"] }

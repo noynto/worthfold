@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use asset::{Asset, AssetProvider};
 use chrono::NaiveDate;
+use institution::InstitutionProvider;
 use shared::{Currency, CurrencyMismatch, Money};
 use valuation::{Valuation, ValuationProvider};
 
@@ -10,6 +11,7 @@ use crate::UseCaseError;
 pub struct ReadNetWorth {
     pub asset_provider: Arc<dyn AssetProvider>,
     pub valuation_provider: Arc<dyn ValuationProvider>,
+    pub institution_provider: Arc<dyn InstitutionProvider>,
 }
 
 pub struct Query {
@@ -25,6 +27,8 @@ pub struct Output {
     pub breakdown: Result<service::Breakdown, CurrencyMismatch>,
     /// Chaque actif avec sa dernière valorisation connue (`None` si jamais valorisé).
     pub lines: Vec<Line>,
+    /// Les noms des banques que l'on peut donner à un compte bancaire.
+    pub bank_names: Vec<String>,
 }
 
 pub struct Line {
@@ -47,10 +51,18 @@ impl ReadNetWorth {
             })
             .collect();
 
+        let bank_names = self
+            .institution_provider
+            .read_all()
+            .await?
+            .into_iter()
+            .map(|i| i.name)
+            .collect();
         Ok(Output {
             total,
             breakdown,
             lines,
+            bank_names,
         })
     }
 }
@@ -100,6 +112,7 @@ mod tests {
         let use_case = ReadNetWorth {
             asset_provider: Arc::new(InMemoryAssets::with(assets)),
             valuation_provider: Arc::new(InMemoryValuations::with(valuations)),
+            institution_provider: Arc::new(testing::InMemoryInstitutions::default()),
         };
 
         let output = use_case

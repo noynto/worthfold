@@ -7,6 +7,7 @@ pub mod add_asset;
 pub mod add_category;
 pub mod add_category_rule;
 pub mod add_default_categories;
+pub mod add_institution;
 pub mod add_planned_payment;
 pub mod apply_category_rules;
 mod bank_details;
@@ -18,9 +19,11 @@ pub mod delete_asset;
 pub mod delete_bank_connection;
 pub mod delete_category;
 pub mod delete_category_rule;
+pub mod delete_institution;
 pub mod delete_planned_payment;
 pub mod delete_valuation;
 pub mod import_transactions;
+mod institution_format;
 pub mod link_bank_account;
 pub mod list_banks;
 pub mod login;
@@ -30,6 +33,7 @@ pub mod read_bank_connections;
 pub mod read_budget;
 pub mod read_categories;
 pub mod read_forecast;
+pub mod read_institutions;
 pub mod read_net_worth;
 pub mod read_net_worth_history;
 pub mod read_planned_payments;
@@ -44,10 +48,16 @@ pub mod setup_password;
 pub mod start_bank_connection;
 pub mod sync_bank_accounts;
 pub mod update_asset;
+pub mod update_institution;
 
 use std::sync::Arc;
 
 pub use auth::{MIN_PASSWORD_LENGTH, SESSION_DAYS};
+pub use institution::{
+    AmountColumns, CsvFormat, DateFormat, DaySeparator, DecimalSeparator, Delimiter, Encoding,
+    PdfFormat,
+};
+pub use institution_format::FormatInput;
 /// Les types de budget que les cas d'usage rendent dans leurs sorties : l'adaptateur web les lit
 /// ici, sans dépendre de la crate `service` (voir docs/tech/architecture.md).
 pub use service::budget::{
@@ -62,6 +72,7 @@ use auth::{AuthProvider, PasswordHasher, Throttle};
 use bank::{BankAggregator, BankConnectionProvider};
 use budget::BudgetProvider;
 use category::CategoryProvider;
+use institution::{InstitutionProvider, PdfReader};
 use recurrence::RecurrenceProvider;
 use transaction::TransactionProvider;
 use valuation::ValuationProvider;
@@ -81,6 +92,10 @@ pub struct UseCases {
     pub read_transactions: read_transactions::ReadTransactions,
     pub read_categories: read_categories::ReadCategories,
     pub read_forecast: read_forecast::ReadForecast,
+    pub read_institutions: read_institutions::ReadInstitutions,
+    pub add_institution: add_institution::AddInstitution,
+    pub update_institution: update_institution::UpdateInstitution,
+    pub delete_institution: delete_institution::DeleteInstitution,
     pub add_category: add_category::AddCategory,
     pub add_default_categories: add_default_categories::AddDefaultCategories,
     pub delete_category: delete_category::DeleteCategory,
@@ -134,6 +149,8 @@ impl UseCases {
         budget: Arc<dyn BudgetProvider>,
         recurrence: Arc<dyn RecurrenceProvider>,
         bank: Arc<dyn BankConnectionProvider>,
+        institutions: Arc<dyn InstitutionProvider>,
+        pdf_reader: Arc<dyn PdfReader>,
         aggregator: Option<Arc<dyn BankAggregator>>,
         auth: AuthPorts,
     ) -> Self {
@@ -142,14 +159,17 @@ impl UseCases {
         Self {
             add_asset: add_asset::AddAsset {
                 asset_provider: assets.clone(),
+                institution_provider: institutions.clone(),
             },
             read_asset: read_asset::ReadAsset {
                 asset_provider: assets.clone(),
                 valuation_provider: valuations.clone(),
+                institution_provider: institutions.clone(),
             },
             update_asset: update_asset::UpdateAsset {
                 asset_provider: assets.clone(),
                 valuation_provider: valuations.clone(),
+                institution_provider: institutions.clone(),
             },
             delete_asset: delete_asset::DeleteAsset {
                 asset_provider: assets.clone(),
@@ -169,6 +189,21 @@ impl UseCases {
             read_net_worth: read_net_worth::ReadNetWorth {
                 asset_provider: assets.clone(),
                 valuation_provider: valuations.clone(),
+                institution_provider: institutions.clone(),
+            },
+            read_institutions: read_institutions::ReadInstitutions {
+                institution_provider: institutions.clone(),
+                asset_provider: assets.clone(),
+            },
+            add_institution: add_institution::AddInstitution {
+                institution_provider: institutions.clone(),
+            },
+            update_institution: update_institution::UpdateInstitution {
+                institution_provider: institutions.clone(),
+            },
+            delete_institution: delete_institution::DeleteInstitution {
+                institution_provider: institutions.clone(),
+                asset_provider: assets.clone(),
             },
             read_net_worth_history: read_net_worth_history::ReadNetWorthHistory {
                 asset_provider: assets.clone(),
@@ -179,6 +214,8 @@ impl UseCases {
                 transaction_provider: transactions.clone(),
                 valuation_provider: valuations.clone(),
                 category_provider: categories.clone(),
+                institution_provider: institutions,
+                pdf_reader,
             },
             read_transactions: read_transactions::ReadTransactions {
                 asset_provider: assets.clone(),

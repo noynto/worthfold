@@ -35,6 +35,10 @@ Les pages sont rendues côté serveur avec askama ; **htmx** fait les mises à j
 | `POST` | `/categories/rules/{id}/delete` | `DeleteCategoryRule` | Supprimer une règle |
 | `POST` | `/categories/apply` | `ApplyCategoryRules` | Classer les opérations sans catégorie d'après les règles |
 | `GET` | `/bank` | `ReadBankConnections` | Page Banque : consentements, jours restants, comptes à rattacher, formulaire de connexion |
+| `GET` | `/banks` | `ReadInstitutions` | La page Banques : leur format CSV et leurs comptes |
+| `POST` | `/banks` | `AddInstitution` | Ajouter une banque avec son format CSV |
+| `POST` | `/banks/{name}/update` | `UpdateInstitution` | Remplacer le format CSV d'une banque (son nom ne change pas) |
+| `POST` | `/banks/{name}/delete` | `DeleteInstitution` | Supprimer une banque (refusé si des comptes s'y rattachent) |
 | `POST` | `/bank/connect` | `StartBankConnection` | Démarrer un consentement : redirige vers la banque |
 | `GET` | `/bank/callback` | `CompleteBankConnection` | Retour de la banque (code et état) ; un refus ou un état inconnu revient sur `/bank` avec un message |
 | `POST` | `/bank/accounts/{uid}/link` | `LinkBankAccount` | Rattacher (ou détacher, avec une valeur vide) un compte de la banque à un compte de worthfold |

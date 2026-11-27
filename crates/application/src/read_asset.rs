@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use asset::{Asset, AssetProvider};
+use institution::InstitutionProvider;
 use shared::AssetId;
 use valuation::{Valuation, ValuationProvider};
 
@@ -9,6 +10,7 @@ use crate::{NOT_FOUND, UseCaseError};
 pub struct ReadAsset {
     pub asset_provider: Arc<dyn AssetProvider>,
     pub valuation_provider: Arc<dyn ValuationProvider>,
+    pub institution_provider: Arc<dyn InstitutionProvider>,
 }
 
 pub struct Query {
@@ -21,6 +23,8 @@ pub struct Output {
     /// Deux saisies à la même date gardent leur ordre de saisie (la dernière saisie d'abord).
     /// Dès qu'il n'est pas vide, la devise et le sens de l'actif sont figés.
     pub valuations: Vec<Valuation>,
+    /// Les noms des banques que l'on peut donner au compte.
+    pub bank_names: Vec<String>,
 }
 
 impl ReadAsset {
@@ -41,7 +45,18 @@ impl ReadAsset {
             .collect();
         valuations.sort_by_key(|v| v.valued_on);
         valuations.reverse();
-        Ok(Output { asset, valuations })
+        let bank_names = self
+            .institution_provider
+            .read_all()
+            .await?
+            .into_iter()
+            .map(|i| i.name)
+            .collect();
+        Ok(Output {
+            asset,
+            valuations,
+            bank_names,
+        })
     }
 }
 
@@ -83,6 +98,7 @@ mod tests {
         let use_case = ReadAsset {
             asset_provider: Arc::new(InMemoryAssets::with([asset])),
             valuation_provider: Arc::new(InMemoryValuations::with(valuations)),
+            institution_provider: Arc::new(testing::InMemoryInstitutions::default()),
         };
 
         let output = use_case
@@ -104,6 +120,7 @@ mod tests {
         let use_case = ReadAsset {
             asset_provider: Arc::new(InMemoryAssets::default()),
             valuation_provider: Arc::new(InMemoryValuations::default()),
+            institution_provider: Arc::new(testing::InMemoryInstitutions::default()),
         };
         let result = use_case
             .handle(Query {

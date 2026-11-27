@@ -36,8 +36,12 @@
     {% endif %}
     {# Un compte bancaire seulement : ignorés pour les autres types. Facultatifs. #}
     <div class="grid gap-3 md:col-span-full md:grid-cols-[1fr_1.5fr]">
-      <label class="field-label">Banque <span class="text-on-surface-variant">(compte bancaire, facultatif)</span>
-        <input class="field" name="bank_name" placeholder="Ma banque" maxlength="100" autocomplete="off">
+      <label class="field-label">Banque <span class="text-on-surface-variant">(compte bancaire ; elle dit comment lire ses relevés)</span>
+        <select class="field" name="bank_name">
+          <option value="">Aucune pour l'instant</option>
+          {% for bank in bank_names %}<option>{{ bank }}</option>{% endfor %}
+        </select>
+        {% if bank_names.is_empty() %}<span class="text-body-small text-on-surface-variant">Aucune banque : <a href="/banks" class="text-primary hover:underline">ajoute-en une</a> pour importer des relevés.</span>{% endif %}
       </label>
       <label class="field-label">Numéro de compte ou IBAN <span class="text-on-surface-variant">(facultatif)</span>
         <input class="field" name="account_number" placeholder="FR76 …" maxlength="60" autocomplete="off" spellcheck="false">

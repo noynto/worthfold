@@ -30,6 +30,8 @@ struct AssetsPage {
     lines: Vec<LineView>,
     kinds: Vec<(&'static str, &'static str)>,
     currencies: Vec<&'static str>,
+    /// Les banques que l'on peut donner à un compte bancaire.
+    bank_names: Vec<String>,
 }
 
 pub async fn get_assets_page(
@@ -51,6 +53,7 @@ pub async fn get_assets_page(
         lines: line_views(output.lines, today),
         kinds: kind_options(),
         currencies: currency_options(),
+        bank_names: output.bank_names,
     });
     with_flash_consumed(page, had_flash)
 }

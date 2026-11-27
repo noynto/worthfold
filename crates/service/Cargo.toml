@@ -14,5 +14,6 @@ recurrence = { package = "worthfold-recurrence", path = "../recurrence" }
 shared = { package = "worthfold-shared", path = "../shared" }
 budget = { package = "worthfold-budget", path = "../budget" }
 category = { package = "worthfold-category", path = "../category" }
+institution = { package = "worthfold-institution", path = "../institution" }
 transaction = { package = "worthfold-transaction", path = "../transaction" }
 valuation = { package = "worthfold-valuation", path = "../valuation" }

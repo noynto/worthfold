@@ -13,6 +13,7 @@ crates/
 ├── valuation/       domaine des valorisations : Valuation, trait ValuationProvider
 ├── transaction/     domaine des transactions : Transaction, TransactionSource, trait TransactionProvider
 ├── category/        domaine des catégories : Category, CategoryKind, CategoryRule, trait CategoryProvider
+├── institution/     domaine des banques : Institution, CsvFormat (comment lire leurs exports CSV), trait InstitutionProvider
 ├── budget/          domaine du budget : Envelope, SavingsPlan, mois, trait BudgetProvider
 ├── auth/            domaine de l'authentification : Credential, Session, Throttle, traits AuthProvider et PasswordHasher
 ├── bank/            domaine de la connexion bancaire : BankConnection, BankAccount, traits BankConnectionProvider et BankAggregator (le port de l'agrégateur)
@@ -30,9 +31,9 @@ crates/
 ```
 bootstrap (binaire) ──▶ server ─────────┐
         │                               ▼
-        ├──────────────────────────▶ application ──▶ service ──▶ asset, valuation, transaction, category, budget, recurrence, bank, auth, shared
+        ├──────────────────────────▶ application ──▶ service ──▶ asset, valuation, transaction, category, institution, budget, recurrence, bank, auth, shared
         │
-        └──▶ infrastructure ──▶ asset, valuation, transaction, category, budget, recurrence, bank, auth, shared
+        └──▶ infrastructure ──▶ asset, valuation, transaction, category, institution, budget, recurrence, bank, auth, shared
 ```
 
 - `asset`, `valuation` et `shared` ne dépendent d'aucune bibliothèque technique : ni sqlx, ni axum.
@@ -83,7 +84,7 @@ Cas d'usage actuels : `AddAsset`, `ReadAsset`, `UpdateAsset`, `DeleteAsset`, `Re
 
 ## Services (`service`)
 
-Des fonctions pures qui reçoivent des objets déjà lus et rendent une valeur : `latest_valuation`, `net_worth`, `breakdown` (avoirs et dettes), `net_worth_history`, `bank_csv::parse` (lecture d'un relevé CSV) et `transactions::new_transactions` (les opérations pas encore connues du compte) `transactions::rule_assignments` (les catégories que les règles donnent aux opérations sans catégorie) `budget` (synthèse d'un mois, état des enveloppes, matelas évalué, versement d'épargne suggéré) et `recurrence` (reconnaître un paiement dans les relevés, montant observé, rapprochement des échéances avec les opérations, calendrier, détection). Le dépliage d'un paiement en échéances (`recurrence::occurrences`) ne croise aucun autre domaine : il vit avec lui. Elles ne lisent ni la base, ni l'horloge (la date est un paramètre), et se testent sans doublure.
+Des fonctions pures qui reçoivent des objets déjà lus et rendent une valeur : `latest_valuation`, `net_worth`, `breakdown` (avoirs et dettes), `net_worth_history`, `bank_csv::parse` (lecture d'un relevé CSV selon le format de la banque), `bank_pdf::parse` (lecture d'un relevé PDF à partir de mots positionnés, avec contrôle des soldes) et `transactions::new_transactions` (les opérations pas encore connues du compte) `transactions::rule_assignments` (les catégories que les règles donnent aux opérations sans catégorie) `budget` (synthèse d'un mois, état des enveloppes, matelas évalué, versement d'épargne suggéré) et `recurrence` (reconnaître un paiement dans les relevés, montant observé, rapprochement des échéances avec les opérations, calendrier, détection). Le dépliage d'un paiement en échéances (`recurrence::occurrences`) ne croise aucun autre domaine : il vit avec lui. Elles ne lisent ni la base, ni l'horloge (la date est un paramètre), et se testent sans doublure.
 
 ## La date du jour
 
@@ -99,7 +100,7 @@ Côté web, `handlers::today()` est la seule lecture de la date du jour : chaque
 
 Un handler lit la requête vers la `Command`, appelle **un seul** cas d'usage, puis traduit le résultat en réponse : une page, un fragment, ou la réponse d'un formulaire (htmx ou non, voir [Web](web.md#formulaires)). Il ne contient aucune règle métier et ne parle à aucun provider.
 
-Les handlers sont rangés par page dans `crates/server/src/handlers/` : `dashboard.rs`, `assets_page.rs` et `asset_page.rs` (chacun avec ses fragments et ses formulaires), `valuations.rs` (les formulaires de valorisation), `transactions.rs` (les opérations d'un compte, l'import et leur classement), `categories.rs` (la page Catégories), `budget.rs` (la page Budget), `payments.rs` (la page Paiements), `forecast.rs` (la page Prévisions), `bank.rs` (la page Banque et le retour de la banque), `views.rs` (ce que plusieurs pages partagent) et `reply.rs` (rendu, réponses de formulaire, pannes, page introuvable).
+Les handlers sont rangés par page dans `crates/server/src/handlers/` : `dashboard.rs`, `assets_page.rs` et `asset_page.rs` (chacun avec ses fragments et ses formulaires), `valuations.rs` (les formulaires de valorisation), `transactions.rs` (les opérations d'un compte, l'import et leur classement), `categories.rs` (la page Catégories), `institutions.rs` (la page Banques et leur format CSV), `budget.rs` (la page Budget), `payments.rs` (la page Paiements), `forecast.rs` (la page Prévisions), `bank.rs` (la page Banque et le retour de la banque), `views.rs` (ce que plusieurs pages partagent) et `reply.rs` (rendu, réponses de formulaire, pannes, page introuvable).
 
 ### Pages composées avec htmx
 

@@ -6,7 +6,7 @@ Application des [fondations](foundations.md) aux écrans de worthfold. Templates
 
 - Fond `surface`, police Roboto Flex, texte `body-large`.
 - Une colonne centrée (`max-w-3xl`), cartes empilées avec `gap-4`.
-- En-tête : le nom « worthfold » (`title-large`, `primary`, lien vers le tableau de bord) et la **navigation** : quatre destinations en pilules (« Tableau de bord », « Actifs », « Budget », « Prévisions ») et un menu « Réglages » (« Paiements », « Banque », « Catégories », « Compte »), de 48 px de haut. Le menu est un `details` : il marche sans JavaScript, et sa pilule est active quand la page courante en fait partie. La page active porte l'indicateur `secondary-container` et `aria-current="page"` ; la page d'un actif active « Actifs ».
+- En-tête : le nom « worthfold » (`title-large`, `primary`, lien vers le tableau de bord) et la **navigation** : quatre destinations en pilules (« Tableau de bord », « Actifs », « Budget », « Prévisions ») et un menu « Réglages » (« Paiements », « Banques », « Connexion bancaire », « Catégories », « Compte »), de 48 px de haut. Le menu est un `details` : il marche sans JavaScript, et sa pilule est active quand la page courante en fait partie. La page active porte l'indicateur `secondary-container` et `aria-current="page"` ; la page d'un actif active « Actifs ».
 
 ## Consulter, parcourir, agir
 
@@ -35,7 +35,7 @@ De haut en bas, il tient sur un écran de téléphone :
 3. **Liste** (`partials/assets.html`) : une ligne par actif, séparée par `outline-variant`. **Chaque ligne entière est un lien** vers la page de l'actif (couche d'état au survol, chevron `›`) : la liste présente, elle ne sert pas à saisir.
    - Nom (`title-medium`) et type (`body-medium`, discret), suivi de la banque et du numéro masqué (`•••• 2606`) pour un compte bancaire renseigné. Un nom long passe à la ligne, il n'est jamais coupé.
    - Dernière valeur (`title-medium`, `error` si négative), sa date (`label-medium`) et, si besoin, « à mettre à jour » ou « jamais valorisé » en `tertiary` ([UX](ux.md), règle 8).
-4. **Carte « Ajouter un actif »** (`id="add"`) : nom, type et, quand plusieurs devises sont proposées, devise (`field` avec `field-label`) ; tant que seul l'euro est proposé, la devise n'est pas demandée. Sur une seconde ligne, la banque et le numéro de compte ou l'IBAN (facultatifs, pour un compte bancaire ; l'IBAN est vérifié). Bouton plein « Ajouter ». Erreur sous le formulaire ; après un succès, le formulaire se vide et le nouvel actif apparaît dans la liste.
+4. **Carte « Ajouter un actif »** (`id="add"`) : nom, type et, quand plusieurs devises sont proposées, devise (`field` avec `field-label`) ; tant que seul l'euro est proposé, la devise n'est pas demandée. Sur une seconde ligne, la banque (liste des banques, voir la page Banques) et le numéro de compte ou l'IBAN (facultatifs, pour un compte bancaire ; l'IBAN est vérifié). Bouton plein « Ajouter ». Erreur sous le formulaire ; après un succès, le formulaire se vide et le nouvel actif apparaît dans la liste.
 
 ## Retours communs
 
@@ -55,7 +55,7 @@ De haut en bas, l'action principale juste sous la valeur actuelle :
 3. **Nouvelle valorisation** : montant, avec le symbole de la devise dans le libellé (« Montant (€) », « Capital restant dû (€) » pour un prêt) et date (limitée au jour même), avec des libellés visibles, et le bouton plein « Enregistrer ». Un refus s'affiche sous le formulaire et la saisie reste ; un succès vide le montant, met à jour l'en-tête et l'historique sans recharger la page, et confirme dans la snackbar.
 4. **Historique** (`partials/asset_history.html`) : toutes les valorisations, de la plus récente à la plus ancienne. Chacune montre sa date, sa valeur et l'écart avec la précédente (« +2 450,00 € », en `error` s'il est négatif, « inchangée » s'il est nul). Pour un prêt, un remboursement donne un écart positif : la dette baisse, le patrimoine monte. Vide : « Aucune valorisation pour l'instant : saisis la première ci-dessus ».
    - Chaque ligne a un bouton texte « Supprimer » (`btn-text-error`, nom accessible « Supprimer la valorisation du … ») pour corriger une saisie erronée, avec une confirmation qui cite la date et le montant. Un refus s'affiche en haut de l'historique ; un succès met à jour l'en-tête, l'historique et les sections de gestion sans recharger la page.
-5. **Modifier le nom ou le type** (`partials/asset_manage.html`) : section repliée (`<details>`, secondaire). Quand plusieurs devises sont proposées, la devise s'y ajoute (« Modifier le nom, le type ou la devise ») ; une devise figée s'affiche alors en texte, avec la raison. Pour un compte bancaire, la banque et le numéro s'y modifient aussi (champs vides : non renseignés). Après un succès, la page se recharge avec la confirmation.
+5. **Modifier le nom ou le type** (`partials/asset_manage.html`) : section repliée (`<details>`, secondaire). Quand plusieurs devises sont proposées, la devise s'y ajoute (« Modifier le nom, le type ou la devise ») ; une devise figée s'affiche alors en texte, avec la raison. Pour un compte bancaire, la banque (liste) et le numéro s'y modifient aussi (vides : non renseignés). Après un succès, la page se recharge avec la confirmation.
 6. **Supprimer** : ce qui sera perdu, chiffré et accordé (« son historique : 3 valorisations », « aucune valorisation »), et bouton `btn-outlined-error`, avec confirmation par `hx-confirm` (voir [Web](../tech/web.md#htmx)). Après un succès, retour à la page Actifs, avec la confirmation dans la snackbar.
 
 En-tête, historique et sections de gestion se rechargent ensemble après une valorisation : le nombre de valorisations annoncé et le verrou de la devise restent justes sans recharger la page.
@@ -65,7 +65,7 @@ En-tête, historique et sections de gestion se rechargent ensemble après une va
 Page d'un compte bancaire, accessible depuis la page de l'actif ; l'onglet « Actifs » reste actif. De haut en bas :
 
 1. **Retour** « ← nom du compte ».
-2. **Importer un relevé** : le fichier CSV, le solde après la dernière opération (facultatif) et le bouton plein « Importer ». Pendant l'envoi, le bouton est désactivé (htmx). Un succès recharge la page avec la confirmation dans la snackbar (« 2 opérations importées. Solde de 1 300,00 € enregistré. ») ; un refus s'affiche sous le formulaire, ou en haut de la page sans JavaScript. Règles : [Transactions](../specs/transactions.md).
+2. **Importer un relevé** : le relevé (CSV ou PDF), le solde après la dernière opération (facultatif) et le bouton plein « Importer ». Pendant l'envoi, le bouton est désactivé (htmx). Un succès recharge la page avec la confirmation dans la snackbar (« 2 opérations importées. Solde de 1 300,00 € enregistré. ») ; un refus s'affiche sous le formulaire, ou en haut de la page sans JavaScript. Règles : [Transactions](../specs/transactions.md).
 3. **En attente** (seulement s'il y en a) : ce que la banque annonce sans l'avoir comptabilisé, avec leur somme en titre et une phrase qui dit qu'elles ne comptent pas dans le budget. Informatif : pas de catégorie à choisir.
 4. **Liste** : le nombre d'opérations en titre, puis une ligne par opération (date, libellé, montant en `error` si c'est une dépense), de la plus récente à la plus ancienne. Vide : « Aucune opération pour l'instant : importe ton premier relevé ci-dessus ».
 
@@ -111,7 +111,7 @@ Page en lecture seule. De haut en bas :
 5. **Sur quoi ça repose** : les hypothèses en phrases, juste sous la courbe, car elles conditionnent la lecture des chiffres.
 6. **Détail mois après mois**, zone repliée : solde attendu, mouvement du mois, fourchette ; « sous le matelas » et « à découvert » sont dits en toutes lettres, pas par la seule couleur. Règles : [Prévisions](../specs/forecast.md).
 
-## Banque (`bank_page.html`)
+## Connexion bancaire (`bank_page.html`, `/bank`)
 
 1. Sans configuration, une carte explique les variables à renseigner ; le reste de la page est masqué.
 2. **Une carte par banque connectée** : les jours de consentement restants (en `text-tertiary` à 14 jours ou moins, en `text-error` une fois expiré, toujours dits en toutes lettres), puis ses comptes, chacun avec un sélecteur « Reçoit les opérations dans » et sa date de dernière lecture, et « Retirer la connexion » (confirmation htmx).
@@ -124,6 +124,7 @@ Les pages **Connexion** et **Première configuration** n'ont pas de navigation (
 
 - **Connexion** : un champ « Mot de passe » (focus à l'ouverture) et « Se connecter ». Un refus s'affiche au-dessus du formulaire (`bg-error-container`, `role="alert"`) ; il ne dit jamais ce qui manque (« Mot de passe incorrect. »). Après trop d'essais, il dit combien d'attente.
 - **Première configuration** (seulement tant qu'aucun mot de passe n'existe) : le code de configuration affiché dans la console, le mot de passe et sa confirmation, avec l'exigence de longueur écrite. Une fois enregistré, l'utilisateur est connecté.
+- **Banques** (menu Réglages, `/banks`) : la liste des banques, chacune avec son nombre de comptes et son format CSV en une ligne, repliée dans un `details` « Modifier » (les réglages, « Enregistrer les réglages », « Supprimer la banque » avec confirmation htmx). Un encadré « Relevé PDF (facultatif) » règle la lecture des PDF. Dessous, « Nouvelle banque » : le nom et les mêmes réglages, préremplis avec le format le plus courant. Règles : [Banques et format CSV](../specs/banks.md).
 - **Compte** (menu Réglages) : « Changer le mot de passe » (actuel, nouveau, confirmation) et « Se déconnecter ». Le changement ferme les autres sessions, et le dit.
 
 Tous ces formulaires sont des envois classiques (sans htmx) : une redirection, et la confirmation éventuelle dans la snackbar.

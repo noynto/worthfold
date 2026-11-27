@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Banques · worthfold{% endblock %}
+{% block snackbar %}{% if let Some(flash) = flash %}<p class="snackbar">{{ flash }}</p>{% endif %}{% endblock %}
+{% block content %}
+
+<h1 class="px-2 text-headline-small">Banques</h1>
+
+{% if let Some(error) = error %}
+<p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ error }}</p>
+{% endif %}
+<p id="error-banks" role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container empty:hidden"></p>
+
+<section class="rounded-xl bg-surface-container-low p-2 md:p-3" aria-labelledby="list-title">
+  <h2 id="list-title" class="px-4 pb-1 pt-3 text-title-medium">Tes banques</h2>
+  <p class="px-4 pb-2 text-body-medium text-on-surface-variant">Chaque banque exporte ses relevés à sa façon. Décris une fois comment lire ses fichiers CSV, puis choisis la banque sur tes comptes bancaires : l'import s'en sert.</p>
+  {% if banks.is_empty() %}
+  <p class="px-4 py-4 text-body-medium text-on-surface-variant">Aucune banque pour l'instant : ajoute la première ci-dessous.</p>
+  {% else %}
+  <ul class="divide-y divide-outline-variant">
+    {% for bank in banks %}
+    <li class="px-4 py-3">
+      <details>
+        <summary class="flex cursor-pointer list-none items-center gap-4">
+          <span class="min-w-0 grow">
+            <span class="block break-words text-title-medium">{{ bank.name }}</span>
+            <span class="block text-body-medium text-on-surface-variant">{{ bank.accounts }} · {{ bank.summary }}</span>
+          </span>
+          <span class="text-label-large text-primary">Modifier</span>
+        </summary>
+        <form class="mt-4 flex flex-col gap-3" method="post" action="/banks/{{ bank.name|urlencode }}/update">
+          {% let f = bank.form %}
+          {% include "partials/csv_format.html" %}
+          <div><button class="btn-tonal">Enregistrer les réglages</button></div>
+        </form>
+        <form class="mt-3" method="post" action="/banks/{{ bank.name|urlencode }}/delete"
+              hx-post="/banks/{{ bank.name|urlencode }}/delete" hx-target="#error-banks" hx-swap="innerHTML" hx-disabled-elt="find button"
+              hx-confirm="{{ bank.delete_confirm }}">
+          <button class="btn-text-error" aria-label="Supprimer la banque {{ bank.name }}">Supprimer la banque</button>
+        </form>
+      </details>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="new-title">
+  <h2 id="new-title" class="px-2 pb-1 text-title-medium">Nouvelle banque</h2>
+  <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Ouvre un export de ta banque dans un éditeur de texte : les noms des colonnes se recopient tels qu'ils sont écrits sur la ligne d'en-tête (la casse et les accents n'ont pas d'importance). Les lignes avant l'en-tête (nom du compte, période…) sont ignorées.</p>
+  <form class="flex flex-col gap-3" method="post" action="/banks">
+    <label class="field-label">Nom de la banque
+      <input class="field" name="name" required maxlength="100" placeholder="Ma banque" autocomplete="off">
+    </label>
+    {% let f = new_form %}
+    {% include "partials/csv_format.html" %}
+    <div><button class="btn-filled">Ajouter la banque</button></div>
+  </form>
+</section>
+{% endblock %}

@@ -96,14 +96,25 @@ impl AssetProvider for PersistedAssets {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::persistence::PersistedInstitutions;
     use crate::persistence::testdb::database;
     use asset::AssetKind;
+    use institution::{CsvFormat, Institution, InstitutionProvider};
     use shared::Currency;
 
     #[tokio::test]
     async fn la_banque_et_le_numero_font_l_aller_retour_et_peuvent_etre_retires() {
         let Some(db) = database().await else { return };
         let assets = PersistedAssets::new(db.pool.clone());
+        // La banque d'un compte doit exister : la base le garantit.
+        PersistedInstitutions::new(db.pool.clone())
+            .write(&Institution {
+                name: "Ma banque".into(),
+                csv: CsvFormat::suggested(),
+                pdf: None,
+            })
+            .await
+            .unwrap();
         let mut account = Asset {
             id: AssetId::generate(),
             name: "Courant".into(),

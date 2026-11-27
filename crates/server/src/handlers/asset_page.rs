@@ -40,6 +40,8 @@ struct AssetDetail {
     currency: &'static str,
     /// Valeurs actuelles des champs de modification (le numéro est montré groupé par quatre).
     bank_name: String,
+    /// Les banques proposées, dont `bank_name` est celle du compte.
+    bank_names: Vec<String>,
     account_number: String,
     /// Devise et sens figés dès la première valorisation.
     currency_locked: bool,
@@ -112,6 +114,7 @@ fn asset_detail(output: &read_asset::Output, today: NaiveDate) -> AssetDetail {
         has_transactions: output.asset.kind == AssetKind::BankAccount,
         currency: output.asset.currency.code(),
         bank_name: output.asset.bank_name.clone().unwrap_or_default(),
+        bank_names: output.bank_names.clone(),
         account_number: output
             .asset
             .account_number

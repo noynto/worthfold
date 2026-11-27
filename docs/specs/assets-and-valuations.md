@@ -15,7 +15,7 @@ Un actif est ce que l'on possède ou ce que l'on doit : un nom, un type et une d
 | Prêt | `loan` | Dette |
 
 - Le **nom** est obligatoire, nettoyé de ses espaces autour, et limité à 100 caractères (`Asset::validate_name`).
-- Un **compte bancaire** peut en plus porter une **banque** (100 caractères au plus) et un **numéro de compte**, tous deux facultatifs. Seul ce type les garde : saisis pour un autre type, ils sont ignorés, et changer un compte en livret les efface. Voir [Banque et numéro](#banque-et-numéro-dun-compte).
+- Un **compte bancaire** peut en plus porter une **banque** (choisie parmi les [banques](banks.md)) et un **numéro de compte**, tous deux facultatifs. Seul ce type les garde : saisis pour un autre type, ils sont ignorés, et changer un compte en livret les efface. Voir [Banque et numéro](#banque-et-numéro-dun-compte).
 - Le **code** du type est stable : c'est lui qui est enregistré en base et envoyé par les formulaires.
 - Le **sens** est donné par `AssetKind::is_liability`. Ajouter un type oblige à décider s'il s'agit d'une dette : le `match` liste tous les types, sans joker.
 
@@ -24,7 +24,7 @@ Un actif est ce que l'on possède ou ce que l'on doit : un nom, un type et une d
 - Le **numéro** est nettoyé (espaces et tirets retirés, majuscules) et enregistré sans espaces. De 4 à 34 lettres et chiffres.
 - Un numéro qui commence par **deux lettres et deux chiffres** est lu comme un **IBAN** : sa clé de contrôle (modulo 97) est vérifiée, et une faute de frappe est refusée (« Cet IBAN n'est pas valide… »). Tout autre numéro (RIB, compte étranger) est accepté tel quel.
 - Affichage : **groupé par quatre** (`FR14 2004 …`) sur la page du compte ; **masqué** dans les listes (`Ma banque · •••• 2606`), pour ne pas étaler l'IBAN en entier.
-- Les comptes existants n'ont ni banque ni numéro : un champ vide veut dire « non renseigné ». La banque et le numéro ne servent qu'à reconnaître le compte ; ils ne pilotent ni la lecture bancaire ni l'import.
+- Les comptes existants n'ont ni banque ni numéro : un champ vide veut dire « non renseigné ». Le numéro ne sert qu'à reconnaître le compte. La banque, elle, dit comment lire les relevés CSV du compte : sans elle, pas d'import.
 
 ## Devises et montants
 

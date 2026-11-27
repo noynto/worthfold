@@ -85,10 +85,11 @@ Détails dans [Développement](docs/tech/development.md).
 | Document | Contenu |
 |---|---|
 | [Actifs et valorisations](docs/specs/assets-and-valuations.md) | Types d'actifs, devises, historique, prêts, règles de modification et de suppression |
-| [Transactions et import de relevés](docs/specs/transactions.md) | Opérations d'un compte bancaire, import CSV (reconnaissance des colonnes, doublons, refus), solde du compte |
+| [Transactions et import de relevés](docs/specs/transactions.md) | Opérations d'un compte bancaire, import CSV selon la banque du compte (doublons, refus), solde du compte |
 | [Catégories et règles](docs/specs/categories.md) | Catégories et leur sens, règles d'affectation par libellé, classement à l'import, à la demande et à la main |
 | [Budget et épargne](docs/specs/budget.md) | Synthèse du mois, enveloppes par catégorie, matelas de sécurité évalué, versement d'épargne suggéré |
 | [Paiements prévus](docs/specs/payments.md) | Rythmes, montants par paliers et révisions, exceptions, rapprochement avec les relevés, suggestions détectées |
+| [Banques et formats de relevé](docs/specs/banks.md) | Une banque dit comment décoder ses exports CSV (encodage, séparateur, colonnes, dates, montants) et ses relevés PDF (colonnes par position, soldes vérifiés) ; rattachement des comptes |
 | [Connexion bancaire](docs/specs/bank.md) | EnableBanking : consentement de 90 jours, rattachement des comptes, lecture des opérations et du solde, renouvellement, tâche planifiée |
 | [Prévisions de trésorerie](docs/specs/forecast.md) | Solde et patrimoine projetés mois après mois, trois scénarios, alertes de découvert et de matelas |
 | [Patrimoine net et évolution](docs/specs/net-worth.md) | Calcul du total, de l'historique, et limites actuelles |

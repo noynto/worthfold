@@ -13,6 +13,7 @@ use bank::{
 use budget::{BudgetProvider, Envelope, SavingsPlan};
 use category::{Category, CategoryProvider, CategoryRule};
 use chrono::{DateTime, NaiveDate, Utc};
+use institution::{Institution, InstitutionProvider, PdfReader, PositionedWord};
 use recurrence::{ExceptionAction, PlannedPayment, RecurrenceProvider};
 use shared::{
     AssetId, BankConnectionId, CategoryId, CategoryRuleId, PlannedPaymentId, TransactionId,
@@ -685,5 +686,60 @@ impl PasswordHasher for PlainHasher {
 
     fn verify(&self, password: &str, hash: &str) -> anyhow::Result<bool> {
         Ok(hash == format!("plain:{password}"))
+    }
+}
+
+#[derive(Default)]
+pub struct InMemoryInstitutions(Mutex<Vec<Institution>>);
+
+impl InMemoryInstitutions {
+    pub fn with(institutions: impl IntoIterator<Item = Institution>) -> Self {
+        Self(Mutex::new(institutions.into_iter().collect()))
+    }
+}
+
+#[async_trait]
+impl InstitutionProvider for InMemoryInstitutions {
+    async fn read_all(&self) -> anyhow::Result<Vec<Institution>> {
+        let mut all = self.0.lock().unwrap().clone();
+        all.sort_by_key(|i| i.name.to_lowercase());
+        Ok(all)
+    }
+
+    async fn read(&self, name: &str) -> anyhow::Result<Option<Institution>> {
+        Ok(self
+            .0
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|i| i.name == name)
+            .cloned())
+    }
+
+    async fn write(&self, institution: &Institution) -> anyhow::Result<()> {
+        let mut all = self.0.lock().unwrap();
+        all.retain(|i| i.name != institution.name);
+        all.push(institution.clone());
+        Ok(())
+    }
+
+    async fn delete(&self, name: &str) -> anyhow::Result<()> {
+        self.0.lock().unwrap().retain(|i| i.name != name);
+        Ok(())
+    }
+}
+
+/// Un lecteur de PDF qui rend toujours les mêmes pages (ou le même refus).
+pub struct StubPdfReader(pub Result<Vec<Vec<PositionedWord>>, String>);
+
+impl Default for StubPdfReader {
+    fn default() -> Self {
+        Self(Err("Ce PDF est illisible : il est peut-être abîmé.".into()))
+    }
+}
+
+impl PdfReader for StubPdfReader {
+    fn read(&self, _bytes: &[u8]) -> Result<Vec<Vec<PositionedWord>>, String> {
+        self.0.clone()
     }
 }

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use asset::{Asset, AssetKind, AssetProvider};
+use institution::InstitutionProvider;
 use shared::{AssetId, Currency};
 
 use crate::UseCaseError;
@@ -8,6 +9,7 @@ use crate::bank_details::bank_details;
 
 pub struct AddAsset {
     pub asset_provider: Arc<dyn AssetProvider>,
+    pub institution_provider: Arc<dyn InstitutionProvider>,
 }
 
 pub struct Command {
@@ -27,8 +29,13 @@ impl AddAsset {
     pub async fn handle(&self, command: Command) -> Result<Output, UseCaseError> {
         // 1. Vérification de la commande.
         let name = Asset::validate_name(&command.name).map_err(UseCaseError::Refusal)?;
-        let (bank_name, account_number) =
-            bank_details(command.kind, &command.bank_name, &command.account_number)?;
+        let (bank_name, account_number) = bank_details(
+            self.institution_provider.as_ref(),
+            command.kind,
+            &command.bank_name,
+            &command.account_number,
+        )
+        .await?;
         // 2. Écriture.
         let asset = Asset {
             id: AssetId::generate(),
@@ -46,7 +53,16 @@ impl AddAsset {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use testing::InMemoryAssets;
+    use institution::{CsvFormat, Institution};
+    use testing::{InMemoryAssets, InMemoryInstitutions};
+
+    fn banks() -> Arc<InMemoryInstitutions> {
+        Arc::new(InMemoryInstitutions::with([Institution {
+            name: "Ma banque".into(),
+            csv: CsvFormat::suggested(),
+            pdf: None,
+        }]))
+    }
 
     fn command(name: &str) -> Command {
         Command {
@@ -63,6 +79,7 @@ mod tests {
         let assets = Arc::new(InMemoryAssets::default());
         let output = AddAsset {
             asset_provider: assets.clone(),
+            institution_provider: banks(),
         }
         .handle(command("  Livret A "))
         .await
@@ -79,6 +96,7 @@ mod tests {
     async fn refuse_un_nom_vide() {
         let result = AddAsset {
             asset_provider: Arc::new(InMemoryAssets::default()),
+            institution_provider: banks(),
         }
         .handle(command("   "))
         .await;
@@ -90,6 +108,7 @@ mod tests {
         let assets = Arc::new(InMemoryAssets::default());
         let output = AddAsset {
             asset_provider: assets.clone(),
+            institution_provider: banks(),
         }
         .handle(Command {
             kind: AssetKind::BankAccount,
@@ -110,6 +129,7 @@ mod tests {
     async fn un_autre_type_n_a_ni_banque_ni_numero_meme_saisis() {
         let output = AddAsset {
             asset_provider: Arc::new(InMemoryAssets::default()),
+            institution_provider: banks(),
         }
         .handle(Command {
             bank_name: "Ma banque".into(),
@@ -128,6 +148,7 @@ mod tests {
     async fn refuse_un_iban_mal_recopie() {
         let result = AddAsset {
             asset_provider: Arc::new(InMemoryAssets::default()),
+            institution_provider: banks(),
         }
         .handle(Command {
             kind: AssetKind::BankAccount,

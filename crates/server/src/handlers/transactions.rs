@@ -47,6 +47,8 @@ struct TransactionsPage {
     section: &'static str,
     id: String,
     name: String,
+    /// La banque du compte : elle dit comment lire le fichier. `None` : à choisir avant d'importer.
+    bank_name: Option<String>,
     rows: Vec<TransactionRow>,
     /// Les opérations que la banque annonce sans les avoir comptabilisées.
     pending: Vec<PendingRow>,
@@ -127,6 +129,7 @@ pub async fn get_transactions_page(
     let page = render(TransactionsPage {
         section: "assets",
         id,
+        bank_name: output.asset.bank_name.clone(),
         name: output.asset.name,
         rows,
         pending,
@@ -222,7 +225,7 @@ pub async fn post_transactions_import(
 
     let command = import_transactions::Command {
         asset_id: id.into(),
-        statement: decode_statement(&statement),
+        statement,
         closing_balance,
         today: today(),
     };
@@ -267,39 +270,9 @@ fn parse_optional_balance(text: &str) -> Result<Option<Decimal>, String> {
     })
 }
 
-/// Les banques françaises exportent souvent en Windows-1252 plutôt qu'en UTF-8 : sans cette lecture,
-/// « Libellé » deviendrait illisible. Un fichier qui n'est pas de l'UTF-8 valide est lu en Windows-1252
-/// (identique à Latin-1, sauf le signe euro).
-fn decode_statement(bytes: &[u8]) -> String {
-    match std::str::from_utf8(bytes) {
-        Ok(text) => text.to_owned(),
-        Err(_) => bytes
-            .iter()
-            .map(|&b| if b == 0x80 { '€' } else { char::from(b) })
-            .collect(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn lit_l_utf8_tel_quel() {
-        assert_eq!(
-            decode_statement("Libellé;Montant €".as_bytes()),
-            "Libellé;Montant €"
-        );
-    }
-
-    #[test]
-    fn lit_le_windows_1252_des_banques() {
-        // « Libellé ; 12 € » en Windows-1252 : é = 0xE9, € = 0x80.
-        let bytes = [
-            b'L', b'i', b'b', b'e', b'l', b'l', 0xE9, b';', b'1', b'2', 0x80,
-        ];
-        assert_eq!(decode_statement(&bytes), "Libellé;12€");
-    }
 
     #[test]
     fn le_solde_est_facultatif_mais_doit_etre_un_nombre() {

@@ -38,6 +38,17 @@ fn signed_in() -> Arc<testing::InMemoryAuth> {
     ))
 }
 
+/// Une banque au format CSV le plus courant : les comptes bancaires des tests s'y rattachent.
+fn test_banks() -> Arc<testing::InMemoryInstitutions> {
+    Arc::new(testing::InMemoryInstitutions::with([
+        institution::Institution {
+            name: "Ma banque".into(),
+            csv: institution::CsvFormat::suggested(),
+            pdf: None,
+        },
+    ]))
+}
+
 fn app() -> Router {
     worthfold_server::router(Arc::new(UseCases::new(
         Arc::new(InMemoryAssets::default()),
@@ -47,6 +58,8 @@ fn app() -> Router {
         Arc::new(InMemoryBudget::default()),
         Arc::new(InMemoryRecurrence::default()),
         Arc::new(testing::InMemoryBank::default()),
+        test_banks(),
+        Arc::new(testing::StubPdfReader::default()),
         None,
         auth_ports(signed_in()),
     )))
@@ -312,7 +325,7 @@ async fn add_asset(app: &Router, kind: &str) -> String {
     app.clone()
         .oneshot(post(
             "/assets",
-            &format!("name=Compte&kind={kind}&currency=EUR"),
+            &format!("name=Compte&kind={kind}&currency=EUR&bank_name=Ma+banque"),
             true,
         ))
         .await
@@ -1233,6 +1246,8 @@ fn bank_app() -> (Router, Arc<testing::FakeAggregator>) {
         Arc::new(InMemoryBudget::default()),
         Arc::new(InMemoryRecurrence::default()),
         Arc::new(testing::InMemoryBank::default()),
+        test_banks(),
+        Arc::new(testing::StubPdfReader::default()),
         Some(aggregator.clone()),
         auth_ports(signed_in()),
     )));
@@ -1408,6 +1423,8 @@ fn anonymous_app(configured: bool) -> (Router, Arc<testing::InMemoryAuth>) {
         Arc::new(InMemoryBudget::default()),
         Arc::new(InMemoryRecurrence::default()),
         Arc::new(testing::InMemoryBank::default()),
+        test_banks(),
+        Arc::new(testing::StubPdfReader::default()),
         None,
         auth_ports(auth.clone()),
     )));
@@ -1663,6 +1680,8 @@ async fn changer_le_mot_de_passe_ferme_les_autres_sessions() {
         Arc::new(InMemoryBudget::default()),
         Arc::new(InMemoryRecurrence::default()),
         Arc::new(testing::InMemoryBank::default()),
+        test_banks(),
+        Arc::new(testing::StubPdfReader::default()),
         None,
         auth_ports(auth.clone()),
     )));
@@ -1711,6 +1730,8 @@ fn exposed_app(url: &str) -> Router {
             Arc::new(InMemoryBudget::default()),
             Arc::new(InMemoryRecurrence::default()),
             Arc::new(testing::InMemoryBank::default()),
+            test_banks(),
+            Arc::new(testing::StubPdfReader::default()),
             None,
             auth_ports(signed_in()),
         )),
@@ -1805,6 +1826,8 @@ async fn un_client_qui_s_acharne_est_freine_sans_bloquer_le_proprietaire() {
             Arc::new(InMemoryBudget::default()),
             Arc::new(InMemoryRecurrence::default()),
             Arc::new(testing::InMemoryBank::default()),
+            test_banks(),
+            Arc::new(testing::StubPdfReader::default()),
             None,
             auth_ports(signed_in()),
         )),
@@ -1874,8 +1897,11 @@ async fn un_compte_montre_son_numero_masque_en_liste_et_en_entier_sur_sa_page() 
         page.contains("Ma banque · FR14 2004 1010 0505 0001 3M02 606"),
         "{page}"
     );
-    // Le formulaire de modification est prérempli.
-    assert!(page.contains("value=\"Ma banque\""));
+    // Le formulaire de modification est prérempli : la banque du compte est présélectionnée.
+    assert!(
+        page.contains("<option selected>Ma banque</option>"),
+        "{page}"
+    );
     assert!(page.contains("value=\"FR14 2004 1010 0505 0001 3M02 606\""));
 }
 
@@ -1914,4 +1940,197 @@ async fn le_premier_mois_d_un_rythme_se_choisit_dans_une_liste_et_non_dans_un_ch
         .unwrap();
     assert!(select.contains("décembre"));
     assert!(select.matches("<option value=\"20").count() >= 36);
+}
+
+// ── Banques et format CSV ────────────────────────────────────────────────────
+
+/// Le formulaire d'une banque : le format le plus courant, avec ce que le test veut changer.
+fn bank_form(extra: &str) -> String {
+    format!(
+        "encoding=utf8&delimiter=semicolon&header_line=1&date_column=Date&date_format=dmy_slash\
+         &label_column=Libell%C3%A9&amount_mode=signed&amount_column=Montant&decimal_separator=comma{extra}"
+    )
+}
+
+#[tokio::test]
+async fn ajouter_une_banque_la_liste_puis_la_proposer_aux_comptes() {
+    let app = app();
+    let response = app
+        .clone()
+        .oneshot(post(
+            "/banks",
+            &bank_form("&name=Cr%C3%A9dit+Agricole"),
+            false,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+    let page = body(app.clone().oneshot(get("/banks")).await.unwrap()).await;
+    assert!(page.contains("Crédit Agricole"), "{page}");
+    assert!(page.contains("aucun compte"), "{page}");
+    // La banque est proposée dans le formulaire d'ajout d'un actif.
+    let assets = body(app.oneshot(get("/assets")).await.unwrap()).await;
+    assert!(
+        assets.contains("<option>Crédit Agricole</option>"),
+        "{assets}"
+    );
+}
+
+#[tokio::test]
+async fn un_format_invalide_ou_un_nom_deja_pris_est_refuse_avec_le_message() {
+    let app = app();
+    let invalid = bank_form("&name=Autre").replace("header_line=1", "header_line=0");
+    let response = app
+        .clone()
+        .oneshot(post("/banks", &invalid, true))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(body(response).await.contains("Ligne de l&#39;en-tête"));
+
+    let duplicate = app
+        .oneshot(post("/banks", &bank_form("&name=ma+BANQUE"), true))
+        .await
+        .unwrap();
+    assert_eq!(duplicate.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(body(duplicate).await.contains("existe déjà"));
+}
+
+#[tokio::test]
+async fn modifier_le_format_d_une_banque_change_la_lecture_des_releves() {
+    let app = app();
+    let id = add_asset(&app, "bank_account").await;
+    let uri = format!("/assets/{id}/transactions/import");
+    let statement = "Date;Libellé;Débit;Crédit\n05/11/2026;Loyer;700,00;\n";
+
+    // Le format de « Ma banque » attend une colonne « Montant » : le relevé est refusé, avec la raison.
+    let refused = app
+        .clone()
+        .oneshot(import(&uri, statement, ""))
+        .await
+        .unwrap();
+    assert!(
+        header_of(&refused, "location").contains("Montant"),
+        "{}",
+        header_of(&refused, "location")
+    );
+
+    // Une fois la banque réglée sur deux colonnes, le même relevé s'importe.
+    let split = bank_form("").replace(
+        "amount_mode=signed&amount_column=Montant",
+        "amount_mode=debit_credit&debit_column=D%C3%A9bit&credit_column=Cr%C3%A9dit",
+    );
+    let updated = app
+        .clone()
+        .oneshot(post("/banks/Ma%20banque/update", &split, false))
+        .await
+        .unwrap();
+    assert_eq!(updated.status(), StatusCode::SEE_OTHER);
+    let imported = app
+        .clone()
+        .oneshot(import(&uri, statement, ""))
+        .await
+        .unwrap();
+    assert_eq!(imported.status(), StatusCode::SEE_OTHER);
+    let list = body(
+        app.oneshot(get(&format!("/assets/{id}/transactions")))
+            .await
+            .unwrap(),
+    )
+    .await;
+    assert!(list.contains("Loyer"), "{list}");
+}
+
+#[tokio::test]
+async fn un_compte_sans_banque_ne_peut_pas_importer_et_la_page_le_dit() {
+    let app = app();
+    app.clone()
+        .oneshot(post(
+            "/assets",
+            "name=Courant&kind=bank_account&currency=EUR",
+            false,
+        ))
+        .await
+        .unwrap();
+    let list = body(app.clone().oneshot(get("/assets")).await.unwrap()).await;
+    let id = list
+        .split("href=\"/assets/")
+        .nth(1)
+        .and_then(|rest| rest.split('"').next())
+        .unwrap()
+        .to_owned();
+    let page = body(
+        app.clone()
+            .oneshot(get(&format!("/assets/{id}/transactions")))
+            .await
+            .unwrap(),
+    )
+    .await;
+    assert!(page.contains("n'a pas de banque"), "{page}");
+
+    let refused = app
+        .oneshot(import(
+            &format!("/assets/{id}/transactions/import"),
+            STATEMENT,
+            "",
+        ))
+        .await
+        .unwrap();
+    assert!(refused.status().is_redirection() || refused.status() == StatusCode::SEE_OTHER);
+}
+
+#[tokio::test]
+async fn une_banque_utilisee_ne_se_supprime_pas_une_banque_libre_oui() {
+    let app = app();
+    add_asset(&app, "bank_account").await;
+    let refused = app
+        .clone()
+        .oneshot(post("/banks/Ma%20banque/delete", "", true))
+        .await
+        .unwrap();
+    assert_eq!(refused.status(), StatusCode::UNPROCESSABLE_ENTITY);
+
+    app.clone()
+        .oneshot(post("/banks", &bank_form("&name=Libre"), false))
+        .await
+        .unwrap();
+    let deleted = app
+        .clone()
+        .oneshot(post("/banks/Libre/delete", "", false))
+        .await
+        .unwrap();
+    assert_eq!(deleted.status(), StatusCode::SEE_OTHER);
+    let page = body(app.oneshot(get("/banks")).await.unwrap()).await;
+    assert!(!page.contains("Libre"), "{page}");
+}
+
+#[tokio::test]
+async fn une_banque_peut_gerer_les_releves_pdf_et_un_pdf_sans_format_est_refuse() {
+    let app = app();
+    let pdf = "&pdf_enabled=on&pdf_date_separator=dot&pdf_debit_header=D%C3%A9bit&pdf_credit_header=Cr%C3%A9dit\
+               &pdf_balance_marker=SOLDE&pdf_end_marker=TOTAL+DES+OPERATIONS";
+    let response = app
+        .clone()
+        .oneshot(post(
+            "/banks",
+            &bank_form(&format!("&name=Hello+bank{pdf}")),
+            false,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    let page = body(app.clone().oneshot(get("/banks")).await.unwrap()).await;
+    assert!(page.contains("relevé PDF géré"), "{page}");
+
+    // Un format PDF incomplet est refusé avec le message.
+    let incomplete = app
+        .oneshot(post(
+            "/banks",
+            &bank_form(&format!("&name=Autre{}", pdf.replace("SOLDE", ""))),
+            true,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(incomplete.status(), StatusCode::UNPROCESSABLE_ENTITY);
 }
