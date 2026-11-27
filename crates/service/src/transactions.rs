@@ -16,7 +16,7 @@ use transaction::Transaction;
 /// Deux temps. D'abord, l'empreinte exacte (date, montant, libellé). Ensuite, pour ce qui reste,
 /// l'**autre source** : un même mouvement, vu par le relevé et par la banque connectée, n'a pas le même
 /// libellé (la banque l'abrège et le met en capitales sans accents, le relevé y ajoute la contrepartie).
-/// On le reconnaît à la même date et au même montant, quand tous les mots de l'un se retrouvent dans
+/// On le reconnaît à la même date et au même montant, quand presque tous les mots du plus court se retrouvent dans
 /// l'autre (accents, casse et ponctuation ignorés). Les opérations d'une même source ne se rapprochent
 /// jamais ainsi : deux prélèvements distincts du même jour restent deux opérations.
 pub fn new_transactions(existing: &[Transaction], incoming: Vec<Transaction>) -> Vec<Transaction> {
@@ -96,9 +96,11 @@ fn words(label: &str) -> HashSet<String> {
     folded.split_whitespace().map(str::to_owned).collect()
 }
 
-/// Tous les mots de l'un des libellés se retrouvent dans l'autre.
+/// Au moins 80 % des mots du plus court libellé se retrouvent dans l'autre. Tous les mots ne suffisent pas
+/// toujours : la banque et le relevé n'écrivent pas le même identifiant de mandat dans un même prélèvement.
 fn labels_overlap(a: &HashSet<String>, b: &HashSet<String>) -> bool {
-    !a.is_empty() && !b.is_empty() && (a.is_subset(b) || b.is_subset(a))
+    let shortest = a.len().min(b.len());
+    shortest > 0 && a.intersection(b).count() * 5 >= shortest * 4
 }
 
 /// Les catégories que les règles donnent aux transactions **qui n'en ont pas encore**.
@@ -133,6 +135,21 @@ mod tests {
             source: TransactionSource::Csv,
             category_id: None,
         }
+    }
+
+    #[test]
+    fn un_identifiant_de_mandat_different_ne_empeche_pas_le_rapprochement() {
+        let mut releve = transaction(
+            "Prélèvement PREDICA PREVOYANCE DIALOGUE DU C - Predica - CREDIT AGRICOLE ASSURANCE VIE PREDISSIME 9 SERIE 2 ECHEANCE 08/2026 - VERSEMENT REGULIER CONTRAT 80298798462725 -UCP4326082 00/70204070254/27012026/01 ;FR88ZZZ237434 ;80298798462725UCIX.36240GDE7002770R 00/70204070254/27012026/01 FR88ZZZ237434 80298798462725UCIX.36240GDE7002770R",
+            -20,
+        );
+        releve.source = TransactionSource::Csv;
+        let mut banque = transaction(
+            "PRELEVEMENT PREDICA PREVOYANCE DIALOGUE DU C CREDIT AGRICOLE ASSURANCE VIE PREDISSIME 9 SERIE 2 ECHEANCE 08/2026 - VERSEMENT REGULIER CONTRAT 80298798462725 -UCP432608280005387 80298798462725UCIX.36240GDE7002770R 00/70204070254/27012026/01 FR88ZZZ237434",
+            -20,
+        );
+        banque.source = TransactionSource::Bank;
+        assert!(new_transactions(&[releve], vec![banque]).is_empty());
     }
 
     #[test]

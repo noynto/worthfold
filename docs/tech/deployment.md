@@ -84,7 +84,7 @@ Une sauvegarde contient **tout**, y compris les `session_id` bancaires et l'empr
 
 ### Fusionner des opérations en double
 
-Avant le rapprochement automatique des sources ([Transactions](../specs/transactions.md#pas-de-doublons)), un même mouvement lu chez la banque et importé d'un relevé a pu être enregistré deux fois. `scripts/merge-duplicate-transactions.sql` les fusionne avec la même règle que l'application : sur un même compte, même date et même montant, libellés identiques ou dont tous les mots de l'un se retrouvent dans l'autre (accents, casse et ponctuation ignorés) ; on garde la ligne du relevé (et on lui reprend la catégorie de l'autre si elle n'en a pas), on supprime celle de la banque. Il ne touche jamais deux opérations de la même source.
+Avant le rapprochement automatique des sources ([Transactions](../specs/transactions.md#pas-de-doublons)), un même mouvement lu chez la banque et importé d'un relevé a pu être enregistré deux fois. `scripts/merge-duplicate-transactions.sql` les fusionne avec la même règle que l'application : sur un même compte, même date et même montant, libellés identiques ou dont au moins 80 % des mots du plus court se retrouvent dans l'autre (accents, casse et ponctuation ignorés) ; on garde la ligne du relevé (et on lui reprend la catégorie de l'autre si elle n'en a pas), on supprime celle de la banque. Il ne touche jamais deux opérations de la même source.
 
 Par défaut, il **simule** : il liste ce qu'il fusionnerait, puis annule tout. Après une sauvegarde, `-v apply=1` fusionne pour de bon :
 
