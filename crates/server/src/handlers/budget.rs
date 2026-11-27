@@ -221,12 +221,15 @@ async fn show(
             income: money(summary.income),
             spending: money(summary.spending()),
             result: money(summary.result()),
-            result_negative: summary.result().is_sign_negative() && !summary.result().is_zero(),
+            // Tant que des opérations ne sont pas classées, le résultat est provisoire : on ne le colore pas comme une erreur.
+            result_negative: summary.result().is_sign_negative()
+                && !summary.result().is_zero()
+                && summary.uncategorized_count == 0,
             uncategorized: (summary.uncategorized_count > 0).then(|| {
                 format::count(
                     summary.uncategorized_count,
-                    "opération sans catégorie",
-                    "opérations sans catégorie",
+                    "opération",
+                    "opérations",
                 )
             }),
         },

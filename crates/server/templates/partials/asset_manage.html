@@ -34,14 +34,15 @@
         </select>
       </label>
       {% endif %}
-      <label class="field-label">Banque <span class="text-on-surface-variant">(compte bancaire ; elle dit comment lire ses relevés)</span>
+      <label class="field-label"><span>Banque</span>
         <select class="field" name="bank_name">
           <option value=""{% if detail.bank_name.is_empty() %} selected{% endif %}>Aucune</option>
           {% for bank in detail.bank_names %}<option{% if *bank == detail.bank_name %} selected{% endif %}>{{ bank }}</option>{% endfor %}
         </select>
+        <span class="text-body-small">Pour un compte bancaire : la banque dit comment lire ses relevés.</span>
         {% if detail.bank_names.is_empty() %}<span class="text-body-small text-on-surface-variant">Aucune banque : <a href="/banks" class="text-primary hover:underline">ajoute-en une</a>.</span>{% endif %}
       </label>
-      <label class="field-label">Numéro de compte ou IBAN
+      <label class="field-label"><span>Numéro de compte ou IBAN</span>
         <input class="field" name="account_number" value="{{ detail.account_number }}" maxlength="60" autocomplete="off" spellcheck="false">
       </label>
       <div><button class="btn-tonal">Enregistrer les modifications</button></div>

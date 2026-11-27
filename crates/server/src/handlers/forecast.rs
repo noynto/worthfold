@@ -82,7 +82,14 @@ pub async fn get_forecast_page(State(app): AppState) -> Response {
             title: format!("Fin {}", month_label(m.month)),
             expected: money(m.balance.expected),
             range: range(m),
-            net_worth: m.net_worth.map(|w| {
+            // Identique au solde (que des comptes courants) : le répéter n'apprend rien.
+            net_worth: m
+                .net_worth
+                .filter(|w| {
+                    (w.expected, w.low, w.high)
+                        != (m.balance.expected, m.balance.low, m.balance.high)
+                })
+                .map(|w| {
                 format!(
                     "Patrimoine net : {} ({} – {})",
                     money(w.expected),

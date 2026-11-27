@@ -19,14 +19,14 @@
 
 {# Ce qui s'est passé : revenus, dépenses, et ce qu'il en reste. #}
 <section class="rounded-xl-increased bg-surface-container-low p-6 md:p-10" aria-labelledby="summary-title">
-  <h2 id="summary-title" class="text-label-large text-on-surface-variant">Ce qu'il reste du mois</h2>
+  <h2 id="summary-title" class="text-label-large text-on-surface-variant">Ce qu'il reste du mois{% if summary.uncategorized.is_some() %} · provisoire{% endif %}</h2>
   <p class="mt-1 text-display-medium font-medium tabular-nums {% if summary.result_negative %}text-error{% endif %}">{{ summary.result }}</p>
   <dl class="mt-4 grid grid-cols-2 gap-4">
     <div><dt class="text-label-medium text-on-surface-variant">Revenus</dt><dd class="text-title-medium tabular-nums">{{ summary.income }}</dd></div>
     <div><dt class="text-label-medium text-on-surface-variant">Dépenses</dt><dd class="text-title-medium tabular-nums">{{ summary.spending }}</dd></div>
   </dl>
   {% if let Some(uncategorized) = summary.uncategorized %}
-  <p class="mt-4 text-body-medium text-tertiary">{{ uncategorized }} : les sorties comptent dans les dépenses. <a href="/assets" class="underline">Classe-les</a> depuis la page de ton compte pour un budget juste.</p>
+  <p class="mt-4 text-body-medium text-tertiary">{{ uncategorized }} sans catégorie : les sorties comptent dans les dépenses. <a href="/assets" class="underline">Classe-les</a> depuis la page de ton compte pour un budget juste.</p>
   {% endif %}
 </section>
 

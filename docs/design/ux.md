@@ -164,6 +164,20 @@ Estimée par lecture des templates (nombre de zones, de champs, de boutons, de n
 - [x] **Glossaire intégré** : une phrase sous le titre de chaque notion — enveloppe (Budget), matelas (Épargne), règle (Catégories), échéances et paiements (Paiements), mot du libellé (formulaire), scénarios (Prévisions) — plutôt qu'une page d'aide.
 - [x] **Réglages liés** : Budget renvoie vers Catégories (« Les catégories et leurs règles se gèrent… ») et Catégories vers Budget (« Les plafonds par catégorie se fixent… »).
 
+## Audit complémentaire après le rail de navigation (27 novembre 2026)
+
+Pages regardées à 1100 et 390 px, connecté, sur l'application locale. Le mode sombre, le focus au clavier et les mises à jour htmx n'ont pas été observés.
+
+- [x] **Phrase du Budget** : « opérations 68 sans catégorie » (le nombre était inséré après le premier mot) → « 68 opérations sans catégorie ».
+- [x] **Repères de navigation** : le rail et la barre sont hors de `main`, avec un lien « Aller au contenu » visible au focus.
+- [x] **Formulaire d'ajout d'un actif** : libellés en une ligne, aide sous le champ, deux colonnes égales (la banque et l'IBAN ne s'alignaient pas) ; même correction dans le formulaire de modification.
+- [x] **Résultat du Budget** : tant que des opérations ne sont pas classées, le chiffre n'est plus en rouge et le titre dit « provisoire » (règle 11 : ne pas présenter une donnée incomplète comme une erreur).
+- [x] Barre du bas : « Tableau de bord » renommé « Accueil » (il passait sur deux lignes) ; libellé actif en gras.
+- [x] Réglages : séparateurs et chevrons, comme la liste des Actifs.
+- [x] Paiements, sous 640 px : le sens et le compte passent sur leur ligne, le bouton « Ajouter » sous le texte.
+- [x] Prévisions : « Patrimoine net » n'est affiché que s'il diffère du solde.
+- [x] Banque non configurée : une phrase simple d'abord, les variables d'environnement dans « Comment l'activer » (repliable).
+
 ### Limites
 
 L'évaluation vient du code, pas d'une observation. Les comptes de formulaires et de champs sont ceux des gabarits : l'affichage réel dépend du nombre de paiements, de catégories ou de comptes. À confronter à un parcours réel avant de classer les pistes.

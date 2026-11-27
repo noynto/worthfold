@@ -17,9 +17,9 @@
   <p class="px-4 pb-2 text-body-medium text-on-surface-variant">Ces opérations reviennent à intervalle régulier. Ajoute celles que tu veux suivre.</p>
   <ul class="divide-y divide-outline-variant">
     {% for s in suggestions %}
-    <li class="flex items-center gap-4 px-4 py-3">
+    <li class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
       <span class="min-w-0 grow">
-        <span class="block break-words text-title-medium">{{ s.label }} <span class="text-body-medium text-on-surface-variant">· {{ s.direction }} · {{ s.account }}</span></span>
+        <span class="block break-words text-title-medium">{{ s.label }} <span class="block text-body-medium text-on-surface-variant">{{ s.direction }} · {{ s.account }}</span></span>
         <span class="block text-body-medium text-on-surface-variant">{{ s.schedule }} · {{ s.amount }}</span>
         <span class="block text-label-medium text-on-surface-variant">{{ s.detail }}</span>
       </span>
