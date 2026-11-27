@@ -1,6 +1,6 @@
 //! Règles sur les transactions d'un compte.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use category::{CategoryRule, matching_category};
 use shared::{CategoryId, TransactionId};
@@ -15,9 +15,10 @@ use transaction::Transaction;
 ///
 /// Deux temps. D'abord, l'empreinte exacte (date, montant, libellé). Ensuite, pour ce qui reste,
 /// l'**autre source** : un même mouvement, vu par le relevé et par la banque connectée, n'a pas le même
-/// libellé (la banque l'abrège, le relevé y ajoute la contrepartie). On le reconnaît à la même date et au
-/// même montant, quand l'un des libellés commence par l'autre. Les opérations d'une même source ne se
-/// rapprochent jamais ainsi : deux prélèvements distincts du même jour restent deux opérations.
+/// libellé (la banque l'abrège et le met en capitales sans accents, le relevé y ajoute la contrepartie).
+/// On le reconnaît à la même date et au même montant, quand tous les mots de l'un se retrouvent dans
+/// l'autre (accents, casse et ponctuation ignorés). Les opérations d'une même source ne se rapprochent
+/// jamais ainsi : deux prélèvements distincts du même jour restent deux opérations.
 pub fn new_transactions(existing: &[Transaction], incoming: Vec<Transaction>) -> Vec<Transaction> {
     let mut used = vec![false; existing.len()];
 
@@ -51,14 +52,14 @@ pub fn new_transactions(existing: &[Transaction], incoming: Vec<Transaction>) ->
     remaining
         .into_iter()
         .filter(|transaction| {
-            let label = transaction.normalized_label();
+            let mine = words(&transaction.label);
             let twin = by_day_and_amount
                 .get_mut(&day_and_amount(transaction))
                 .and_then(|candidates| {
                     let position = candidates.iter().position(|&i| {
                         let known = &existing[i];
                         known.source != transaction.source
-                            && labels_overlap(&known.normalized_label(), &label)
+                            && labels_overlap(&words(&known.label), &mine)
                     })?;
                     Some(candidates.remove(position))
                 });
@@ -76,9 +77,28 @@ fn day_and_amount(transaction: &Transaction) -> String {
     )
 }
 
-/// L'un des libellés (déjà normalisés) commence par l'autre.
-fn labels_overlap(a: &str, b: &str) -> bool {
-    !a.is_empty() && !b.is_empty() && (a.starts_with(b) || b.starts_with(a))
+/// Les mots d'un libellé : sans accents, en minuscules, la ponctuation et les espaces séparant les mots.
+fn words(label: &str) -> HashSet<String> {
+    let folded: String = label
+        .chars()
+        .flat_map(char::to_lowercase)
+        .map(|c| match c {
+            'à' | 'â' | 'ä' => 'a',
+            'é' | 'è' | 'ê' | 'ë' => 'e',
+            'î' | 'ï' => 'i',
+            'ô' | 'ö' => 'o',
+            'ù' | 'û' | 'ü' => 'u',
+            'ç' => 'c',
+            c if c.is_alphanumeric() => c,
+            _ => ' ',
+        })
+        .collect();
+    folded.split_whitespace().map(str::to_owned).collect()
+}
+
+/// Tous les mots de l'un des libellés se retrouvent dans l'autre.
+fn labels_overlap(a: &HashSet<String>, b: &HashSet<String>) -> bool {
+    !a.is_empty() && !b.is_empty() && (a.is_subset(b) || b.is_subset(a))
 }
 
 /// Les catégories que les règles donnent aux transactions **qui n'en ont pas encore**.
@@ -221,6 +241,26 @@ mod tests {
             from_bank("Paiement par carte CAFE", -3),
             from_bank("Paiement par carte CAFE", -3),
         ];
+        assert_eq!(new_transactions(&existing, incoming).len(), 1);
+    }
+
+    #[test]
+    fn le_rapprochement_ignore_accents_ponctuation_et_mots_ajoutes() {
+        let existing = vec![transaction(
+            "Prélèvement ORANGE SA - Orange - Votre abonnement mobile: 06XXXXX991 (facture: 5336519526) EPCB202506302685710 ;FR18ZZZ002305 ;16543436795593139453365195265 EPCB202506302685710 FR18ZZZ002305 16543436795593139453365195265",
+            -20,
+        )];
+        let incoming = vec![from_bank(
+            "PRELEVEMENT ORANGE SA Votre abonnement mobile: 06XXXXX991 (facture: 5336519526) 16543436795593139453365195265 EPCB202506302685710 FR18ZZZ002305",
+            -20,
+        )];
+        assert!(new_transactions(&existing, incoming).is_empty());
+    }
+
+    #[test]
+    fn des_libelles_qui_n_ont_pas_tous_leurs_mots_en_commun_restent_distincts() {
+        let existing = vec![transaction("Prélèvement ORANGE SA - Orange - mobile", -20)];
+        let incoming = vec![from_bank("PRELEVEMENT EDF facture", -20)];
         assert_eq!(new_transactions(&existing, incoming).len(), 1);
     }
 }

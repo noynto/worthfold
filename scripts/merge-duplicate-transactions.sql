@@ -2,7 +2,8 @@
 -- importé d'un relevé (source `csv`), avant que l'application ne les rapproche toute seule.
 --
 -- Règle (la même que `service::transactions::new_transactions`) : sur un même compte, même date et même
--- montant, et des libellés identiques ou dont l'un commence par l'autre (casse et espaces ignorés). Chaque
+-- montant, et des libellés identiques ou dont tous les mots de l'un se retrouvent dans l'autre (accents, casse
+-- et ponctuation ignorés : « PRELEVEMENT ORANGE SA » et « Prélèvement ORANGE SA - Orange - … »). Chaque
 -- opération ne sert qu'une fois. On garde la ligne du relevé (son libellé est le plus complet) et on supprime
 -- celle de la banque ; si la ligne gardée n'a pas de catégorie et que l'autre en avait une, elle la reprend.
 -- Deux opérations d'une même source ne sont jamais fusionnées.
@@ -16,6 +17,11 @@ BEGIN;
 
 CREATE FUNCTION pg_temp.norm(text) RETURNS text LANGUAGE sql IMMUTABLE AS
 $$ SELECT lower(regexp_replace(btrim($1), '\s+', ' ', 'g')) $$;
+
+-- Les mots d'un libellé : sans accents, en minuscules, séparés par la ponctuation.
+CREATE FUNCTION pg_temp.words(text) RETURNS text[] LANGUAGE sql IMMUTABLE AS
+$$ SELECT string_to_array(btrim(regexp_replace(
+     translate(lower($1), 'àâäéèêëîïôöùûüç', 'aaaeeeeiioouuuc'), '[^a-z0-9]+', ' ', 'g')), ' ') $$;
 
 CREATE TEMP TABLE pairs (csv_id text PRIMARY KEY, bank_id text UNIQUE) ON COMMIT DROP;
 
@@ -39,9 +45,9 @@ BEGIN
         AND NOT EXISTS (SELECT 1 FROM pairs p WHERE p.csv_id = t.id)
         AND (
           (pass = 1 AND pg_temp.norm(t.label) = pg_temp.norm(b.label))
-          OR (pass = 2 AND pg_temp.norm(t.label) <> '' AND pg_temp.norm(b.label) <> ''
-              AND (starts_with(pg_temp.norm(t.label), pg_temp.norm(b.label))
-                   OR starts_with(pg_temp.norm(b.label), pg_temp.norm(t.label))))
+          OR (pass = 2 AND pg_temp.words(t.label) <> '{""}' AND pg_temp.words(b.label) <> '{""}'
+              AND (pg_temp.words(t.label) <@ pg_temp.words(b.label)
+                   OR pg_temp.words(b.label) <@ pg_temp.words(t.label)))
         )
       ORDER BY t.id
       LIMIT 1;
