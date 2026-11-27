@@ -33,7 +33,9 @@ Un fichier qui ne correspond pas au format est refusé en entier, avec la colonn
 
 Réimporter un relevé qui en recouvre un autre ne duplique rien (`service::new_transactions`). Une opération est reconnue à sa **date, son montant et son libellé** (sans tenir compte de la casse ni des espaces). On compare les **nombres** d'occurrences : deux cafés au même prix le même jour restent deux opérations, mais si le compte en connaît déjà un, un seul des deux du fichier est nouveau.
 
-Limite connue : si la banque **change le libellé** d'une opération entre deux exports (une opération en attente qui devient définitive, par exemple), elle n'est plus reconnue et s'importe une seconde fois. Un identifiant d'opération fourni par la banque, avec la synchronisation par banque connectée, supprimera ce cas.
+**Une même opération vue par deux sources.** Le relevé et la banque connectée ne libellent pas un mouvement de la même façon : la banque l'abrège (`PAIEMENT PAR CARTE X2947 ANTHROPIC* CLAUDE SU 24/11`), le relevé y ajoute la contrepartie (`… 24/11 - Anthropic`). Après la comparaison exacte, une opération qui reste est donc rapprochée d'une opération **de l'autre source** de même date et de même montant, quand l'un des libellés commence par l'autre (casse et espaces ignorés). Chaque opération connue ne sert qu'une fois, et deux opérations d'une même source ne se rapprochent jamais ainsi : deux prélèvements distincts du même jour restent deux opérations. La première arrivée est conservée, la seconde n'est pas enregistrée.
+
+Limites : un libellé qui **change** sans que l'un commence par l'autre (une opération en attente devenue définitive, par exemple) n'est pas reconnu et s'importe une seconde fois ; les doublons déjà enregistrés avant ce rapprochement ne sont pas fusionnés (une transaction ne se supprime pas).
 
 ### Catégorie à l'import
 

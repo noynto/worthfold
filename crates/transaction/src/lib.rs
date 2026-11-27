@@ -50,16 +50,20 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    /// Le libellé sans tenir compte de la casse ni des espaces superflus.
+    pub fn normalized_label(&self) -> String {
+        self.label
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .to_lowercase()
+    }
+
     /// Ce qui identifie une opération d'un compte quand la banque ne donne pas d'identifiant :
     /// la date, le montant et le libellé (sans tenir compte de la casse ni des espaces).
     /// Sert à ne pas importer deux fois le même relevé (voir `service::new_transactions`).
     pub fn fingerprint(&self) -> String {
-        let label = self
-            .label
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join(" ")
-            .to_lowercase();
+        let label = self.normalized_label();
         format!(
             "{}|{}|{}|{}",
             self.booked_on,

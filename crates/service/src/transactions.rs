@@ -12,23 +12,73 @@ use transaction::Transaction;
 /// Deux opérations identiques le même jour (deux cafés au même prix) restent deux opérations :
 /// on compare les **nombres** d'occurrences, pas seulement la présence. Si le compte en connaît
 /// déjà une et que le fichier en contient deux, une seule est nouvelle.
+///
+/// Deux temps. D'abord, l'empreinte exacte (date, montant, libellé). Ensuite, pour ce qui reste,
+/// l'**autre source** : un même mouvement, vu par le relevé et par la banque connectée, n'a pas le même
+/// libellé (la banque l'abrège, le relevé y ajoute la contrepartie). On le reconnaît à la même date et au
+/// même montant, quand l'un des libellés commence par l'autre. Les opérations d'une même source ne se
+/// rapprochent jamais ainsi : deux prélèvements distincts du même jour restent deux opérations.
 pub fn new_transactions(existing: &[Transaction], incoming: Vec<Transaction>) -> Vec<Transaction> {
-    let mut known: HashMap<String, usize> = HashMap::new();
-    for transaction in existing {
-        *known.entry(transaction.fingerprint()).or_default() += 1;
+    let mut used = vec![false; existing.len()];
+
+    // Temps 1 : l'empreinte exacte.
+    let mut by_fingerprint: HashMap<String, Vec<usize>> = HashMap::new();
+    for (i, transaction) in existing.iter().enumerate() {
+        by_fingerprint
+            .entry(transaction.fingerprint())
+            .or_default()
+            .push(i);
     }
-    incoming
+    let mut remaining = Vec::new();
+    for transaction in incoming {
+        match by_fingerprint
+            .get_mut(&transaction.fingerprint())
+            .and_then(Vec::pop)
+        {
+            Some(i) => used[i] = true,
+            None => remaining.push(transaction),
+        }
+    }
+
+    // Temps 2 : le même mouvement vu par l'autre source.
+    let mut by_day_and_amount: HashMap<String, Vec<usize>> = HashMap::new();
+    for (i, transaction) in existing.iter().enumerate().filter(|(i, _)| !used[*i]) {
+        by_day_and_amount
+            .entry(day_and_amount(transaction))
+            .or_default()
+            .push(i);
+    }
+    remaining
         .into_iter()
-        .filter(
-            |transaction| match known.get_mut(&transaction.fingerprint()) {
-                Some(count) if *count > 0 => {
-                    *count -= 1;
-                    false
-                }
-                _ => true,
-            },
-        )
+        .filter(|transaction| {
+            let label = transaction.normalized_label();
+            let twin = by_day_and_amount
+                .get_mut(&day_and_amount(transaction))
+                .and_then(|candidates| {
+                    let position = candidates.iter().position(|&i| {
+                        let known = &existing[i];
+                        known.source != transaction.source
+                            && labels_overlap(&known.normalized_label(), &label)
+                    })?;
+                    Some(candidates.remove(position))
+                });
+            twin.is_none()
+        })
         .collect()
+}
+
+fn day_and_amount(transaction: &Transaction) -> String {
+    format!(
+        "{}|{}|{}",
+        transaction.booked_on,
+        transaction.amount.amount.normalize(),
+        transaction.amount.currency
+    )
+}
+
+/// L'un des libellés (déjà normalisés) commence par l'autre.
+fn labels_overlap(a: &str, b: &str) -> bool {
+    !a.is_empty() && !b.is_empty() && (a.starts_with(b) || b.starts_with(a))
 }
 
 /// Les catégories que les règles donnent aux transactions **qui n'en ont pas encore**.
@@ -113,6 +163,64 @@ mod tests {
     fn compare_les_nombres_d_occurrences() {
         let existing = vec![transaction("Café", -3)];
         let incoming = vec![transaction("Café", -3), transaction("Café", -3)];
+        assert_eq!(new_transactions(&existing, incoming).len(), 1);
+    }
+
+    fn from_bank(label: &str, amount: i64) -> Transaction {
+        Transaction {
+            source: TransactionSource::Bank,
+            ..transaction(label, amount)
+        }
+    }
+
+    #[test]
+    fn la_meme_operation_vue_par_la_banque_et_par_le_releve_n_est_comptee_qu_une_fois() {
+        // Le relevé ajoute la contrepartie au libellé abrégé de la banque.
+        let existing = vec![transaction(
+            "Paiement par carte X2947 ANTHROPIC* CLAUDE SU 24/11 - Anthropic",
+            -21,
+        )];
+        let incoming = vec![from_bank(
+            "PAIEMENT PAR CARTE X2947 ANTHROPIC* CLAUDE SU 24/11",
+            -21,
+        )];
+        assert!(new_transactions(&existing, incoming).is_empty());
+        // Dans l'autre sens : la banque d'abord, le relevé ensuite.
+        let existing = vec![from_bank("PAIEMENT PAR CARTE X2947 ANTHROPIC*", -21)];
+        let incoming = vec![transaction(
+            "Paiement par carte X2947 ANTHROPIC* - Anthropic",
+            -21,
+        )];
+        assert!(new_transactions(&existing, incoming).is_empty());
+    }
+
+    #[test]
+    fn deux_sources_ne_se_rapprochent_qu_a_la_meme_date_et_au_meme_montant() {
+        let existing = vec![transaction("Paiement par carte ANTHROPIC - Anthropic", -21)];
+        let other_amount = from_bank("Paiement par carte ANTHROPIC", -22);
+        let other_label = from_bank("Virement SALAIRE", -21);
+        let mut other_day = from_bank("Paiement par carte ANTHROPIC", -21);
+        other_day.booked_on = NaiveDate::from_ymd_opt(2026, 11, 10).unwrap();
+        let new = new_transactions(&existing, vec![other_amount, other_label, other_day]);
+        assert_eq!(new.len(), 3);
+    }
+
+    #[test]
+    fn une_meme_source_ne_se_rapproche_jamais_par_prefixe() {
+        // Deux prélèvements distincts du même jour, le second au libellé plus long.
+        let existing = vec![transaction("Prélèvement IMPOT", -9)];
+        let incoming = vec![transaction("Prélèvement IMPOT TF 25 REF 2", -9)];
+        assert_eq!(new_transactions(&existing, incoming).len(), 1);
+    }
+
+    #[test]
+    fn un_rapprochement_ne_sert_qu_une_fois() {
+        // Un seul paiement connu : des deux lectures de la banque, une seule est le même mouvement.
+        let existing = vec![transaction("Paiement par carte CAFE - Café", -3)];
+        let incoming = vec![
+            from_bank("Paiement par carte CAFE", -3),
+            from_bank("Paiement par carte CAFE", -3),
+        ];
         assert_eq!(new_transactions(&existing, incoming).len(), 1);
     }
 }
