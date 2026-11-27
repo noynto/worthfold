@@ -82,6 +82,17 @@ docker compose start app
 
 Une sauvegarde contient **tout**, y compris les `session_id` bancaires et l'empreinte du mot de passe : la chiffrer ou la ranger comme la base elle-même. Tester une restauration avant d'en avoir besoin.
 
+### Fusionner des opérations en double
+
+Avant le rapprochement automatique des sources ([Transactions](../specs/transactions.md#pas-de-doublons)), un même mouvement lu chez la banque et importé d'un relevé a pu être enregistré deux fois. `scripts/merge-duplicate-transactions.sql` les fusionne avec la même règle que l'application : sur un même compte, même date et même montant, libellés identiques ou dont l'un commence par l'autre ; on garde la ligne du relevé (et on lui reprend la catégorie de l'autre si elle n'en a pas), on supprime celle de la banque. Il ne touche jamais deux opérations de la même source.
+
+Par défaut, il **simule** : il liste ce qu'il fusionnerait, puis annule tout. Après une sauvegarde, `-v apply=1` fusionne pour de bon :
+
+```bash
+docker compose exec -T db psql -U worthfold -d worthfold < scripts/merge-duplicate-transactions.sql              # simulation
+docker compose exec -T db psql -U worthfold -d worthfold -v apply=1 < scripts/merge-duplicate-transactions.sql  # fusion
+```
+
 ## Reprendre une ancienne base SQLite
 
 Si tu as des données dans un ancien `worthfold.db` : démarrer le compose (l'application crée le schéma), puis :
