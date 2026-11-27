@@ -30,7 +30,6 @@ pub use assets_page::{get_asset_new_page, get_assets_fragment, get_assets_page, 
 pub use auth::{
     get_account, get_login, get_setup, post_change_password, post_login, post_logout, post_setup,
 };
-pub use settings::get_settings;
 pub use bank::{
     get_bank_callback, get_bank_page, get_banks_fragment, post_bank_connect, post_bank_delete,
     post_bank_link, post_bank_sync, post_bank_sync_all,
@@ -39,20 +38,22 @@ pub use budget::{
     get_budget_current, get_budget_page, post_envelope, post_envelope_remove, post_savings_plan,
 };
 pub use categories::{
-    get_categories_page, post_apply_rules, post_category, post_category_delete,
-    post_default_categories, post_rule, post_rule_delete,
+    get_categories_page, get_category_new_page, get_rule_new_page, post_apply_rules, post_category,
+    post_category_delete, post_default_categories, post_rule, post_rule_delete,
 };
 pub use dashboard::{
     get_chart_fragment, get_dashboard, get_net_worth_chart, get_net_worth_fragment,
 };
 pub use forecast::get_forecast_page;
 pub use institutions::{
-    get_banks_page, post_institution, post_institution_delete, post_institution_update,
+    get_bank_new_page, get_banks_page, post_institution, post_institution_delete,
+    post_institution_update,
 };
 pub use payments::{
-    get_payment_new_page, get_payments_page, post_occurrence, post_payment, post_payment_delete, post_payment_step,
-    post_suggestion,
+    get_payment_new_page, get_payments_page, post_occurrence, post_payment, post_payment_delete,
+    post_payment_step, post_suggestion,
 };
+pub use settings::get_settings;
 pub use transactions::{
     get_transactions_page, post_transaction_category, post_transactions_import,
 };

@@ -111,8 +111,6 @@ type Options = Vec<(&'static str, &'static str)>;
 struct BanksPage {
     section: &'static str,
     banks: Vec<BankView>,
-    /// Les réglages proposés pour une nouvelle banque.
-    new_form: FormatView,
     encodings: Options,
     delimiters: Options,
     date_formats: Options,
@@ -120,6 +118,20 @@ struct BanksPage {
     day_separators: Options,
     error: Option<String>,
     flash: Option<String>,
+}
+
+/// Les choix des listes du formulaire de format : encodage, séparateur, format de date, séparateurs décimal et de jour.
+fn format_options() -> (Options, Options, Options, Options, Options) {
+    fn all<T>(values: &[T], pair: impl Fn(&T) -> (&'static str, &'static str)) -> Options {
+        values.iter().map(pair).collect()
+    }
+    (
+        all(Encoding::ALL, |v| (v.code(), v.label())),
+        all(Delimiter::ALL, |v| (v.code(), v.label())),
+        all(DateFormat::ALL, |v| (v.code(), v.label())),
+        all(DecimalSeparator::ALL, |v| (v.code(), v.label())),
+        all(DaySeparator::ALL, |v| (v.code(), v.label())),
+    )
 }
 
 fn summary(csv: &CsvFormat, pdf: Option<&PdfFormat>) -> String {
@@ -143,6 +155,38 @@ fn summary(csv: &CsvFormat, pdf: Option<&PdfFormat>) -> String {
         csv.date_format.label(),
         csv.label_column,
     )
+}
+
+// ── GET /banks/new ───────────────────────────────────────────────────────────
+
+#[derive(Template)]
+#[template(path = "bank_new_page.html")]
+struct BankNewPage {
+    section: &'static str,
+    /// Les réglages proposés pour une nouvelle banque.
+    new_form: FormatView,
+    encodings: Options,
+    delimiters: Options,
+    date_formats: Options,
+    decimal_separators: Options,
+    day_separators: Options,
+    error: Option<String>,
+}
+
+/// La page d'ajout d'une banque : rien à lire, donc aucun cas d'usage.
+pub async fn get_bank_new_page(Query(params): Query<ErrorParams>) -> Response {
+    let (encodings, delimiters, date_formats, decimal_separators, day_separators) =
+        format_options();
+    render(BankNewPage {
+        section: "banks",
+        new_form: FormatView::new(&CsvFormat::suggested(), None),
+        encodings,
+        delimiters,
+        date_formats,
+        decimal_separators,
+        day_separators,
+        error: params.error,
+    })
 }
 
 // ── GET /banks ───────────────────────────────────────────────────────────────
@@ -173,41 +217,18 @@ pub async fn get_banks_page(
             name: line.institution.name,
         })
         .collect();
-    let options = |all: Vec<(&'static str, &'static str)>| all;
+    let (encodings, delimiters, date_formats, decimal_separators, day_separators) =
+        format_options();
     let flash = flash::take(&headers);
     let had_flash = flash.is_some();
     let page = render(BanksPage {
         section: "banks",
         banks,
-        new_form: FormatView::new(&CsvFormat::suggested(), None),
-        day_separators: DaySeparator::ALL
-            .iter()
-            .map(|v| (v.code(), v.label()))
-            .collect(),
-        encodings: options(
-            Encoding::ALL
-                .iter()
-                .map(|v| (v.code(), v.label()))
-                .collect(),
-        ),
-        delimiters: options(
-            Delimiter::ALL
-                .iter()
-                .map(|v| (v.code(), v.label()))
-                .collect(),
-        ),
-        date_formats: options(
-            DateFormat::ALL
-                .iter()
-                .map(|v| (v.code(), v.label()))
-                .collect(),
-        ),
-        decimal_separators: options(
-            DecimalSeparator::ALL
-                .iter()
-                .map(|v| (v.code(), v.label()))
-                .collect(),
-        ),
+        encodings,
+        delimiters,
+        date_formats,
+        decimal_separators,
+        day_separators,
         error: params.error,
         flash,
     });
@@ -282,7 +303,8 @@ pub async fn post_institution(
     headers: HeaderMap,
     Form(form): Form<BankForm>,
 ) -> Response {
-    let reply = Reply::new(&headers, PAGE);
+    // Un refus rouvre la page d'ajout ; un succès revient à la liste.
+    let reply = Reply::new(&headers, "/banks/new");
     let command = add_institution::Command {
         format: form.format(),
         name: form.name,

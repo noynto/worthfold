@@ -136,7 +136,10 @@ pub async fn post_asset(
         // Sur la page du nouvel actif, où l'on saisit sa première valeur.
         Ok(output) => reply.redirect(
             &format!("/assets/{}", output.asset.id),
-            &format!("« {} » ajouté : saisis sa première valeur.", output.asset.name),
+            &format!(
+                "« {} » ajouté : saisis sa première valeur.",
+                output.asset.name
+            ),
         ),
         Err(e) => reply.error(e),
     }

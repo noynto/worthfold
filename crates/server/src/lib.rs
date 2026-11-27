@@ -93,6 +93,7 @@ pub fn router_exposed(use_cases: Arc<UseCases>, exposure: Exposure) -> Router {
             "/payments/{id}/occurrences/{date}",
             post(handlers::post_occurrence),
         )
+        .route("/banks/new", get(handlers::get_bank_new_page))
         .route(
             "/banks",
             get(handlers::get_banks_page).post(handlers::post_institution),
@@ -130,6 +131,8 @@ pub fn router_exposed(use_cases: Arc<UseCases>, exposure: Exposure) -> Router {
             "/categories/defaults",
             post(handlers::post_default_categories),
         )
+        .route("/categories/new", get(handlers::get_category_new_page))
+        .route("/categories/rules/new", get(handlers::get_rule_new_page))
         .route("/categories/apply", post(handlers::post_apply_rules))
         .route("/categories/rules", post(handlers::post_rule))
         .route(

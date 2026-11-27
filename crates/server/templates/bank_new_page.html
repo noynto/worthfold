@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Nouvelle banque · worthfold{% endblock %}
+{% block content %}
+
+<div class="flex items-center gap-2">
+  <a href="/banks" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large text-primary">← Banques</a>
+</div>
+
+<h1 class="px-2 text-headline-small">Nouvelle banque</h1>
+
+{% if let Some(error) = error %}
+<p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ error }}</p>
+{% endif %}
+
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="new-title">
+  <h2 id="new-title" class="sr-only">Les réglages de la banque</h2>
+  <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Ouvre un export de ta banque dans un éditeur de texte : les noms des colonnes se recopient tels qu'ils sont écrits sur la ligne d'en-tête (la casse et les accents n'ont pas d'importance). Les lignes avant l'en-tête (nom du compte, période…) sont ignorées.</p>
+  <form class="flex flex-col gap-3" method="post" action="/banks">
+    <label class="field-label">Nom de la banque
+      <input class="field" name="name" required maxlength="100" placeholder="Ma banque" autocomplete="off">
+    </label>
+    {% let f = new_form %}
+    {% include "partials/csv_format.html" %}
+    <div class="flex flex-wrap items-center gap-3"><button class="btn-filled">Ajouter la banque</button><a href="/banks" class="btn text-primary">Annuler</a></div>
+  </form>
+</section>
+{% endblock %}

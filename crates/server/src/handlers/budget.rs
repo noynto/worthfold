@@ -225,13 +225,8 @@ async fn show(
             result_negative: summary.result().is_sign_negative()
                 && !summary.result().is_zero()
                 && summary.uncategorized_count == 0,
-            uncategorized: (summary.uncategorized_count > 0).then(|| {
-                format::count(
-                    summary.uncategorized_count,
-                    "opération",
-                    "opérations",
-                )
-            }),
+            uncategorized: (summary.uncategorized_count > 0)
+                .then(|| format::count(summary.uncategorized_count, "opération", "opérations")),
         },
         envelopes,
         expense_categories: output

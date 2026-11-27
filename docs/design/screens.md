@@ -76,10 +76,11 @@ Page d'un compte bancaire, accessible depuis la page de l'actif ; l'onglet « Ac
 
 Page du menu Réglages. De haut en bas :
 
-1. **Titre**, puis un message d'erreur éventuel (refus d'un formulaire, ou d'une suppression).
+1. **Titre** et, à droite, un bouton plein « Nouvelle catégorie » vers `/categories/new`, puis un message d'erreur éventuel (refus d'un formulaire, ou d'une suppression).
 2. Sans aucune catégorie : **Ajouter les catégories usuelles** (bouton plein), qui explique à quoi servent les catégories. Sinon, la **liste** : chaque catégorie avec son sens et un bouton texte « Supprimer » (confirmation qui annonce que les opérations redeviennent sans catégorie), et dessous ses règles (« Libellé contenant « carrefour » », avec leur propre bouton « Supprimer »).
-3. **Nouvelle règle** (une fois des catégories créées) : le motif, la catégorie, le bouton plein « Ajouter la règle ». Dessous, le bouton tonal **Classer les opérations**, avec sa phrase d'explication : il applique les règles aux opérations sans catégorie, sans toucher à celles classées à la main.
-4. **Nouvelle catégorie** : le nom, le sens, le bouton plein « Ajouter ».
+3. **Règles de classement** (une fois des catégories créées) : une phrase qui dit comment une règle s'applique, le bouton tonal « Nouvelle règle » vers `/categories/rules/new`, puis le bouton tonal **Classer les opérations** **Classer les opérations**, avec sa phrase d'explication : il applique les règles aux opérations sans catégorie, sans toucher à celles classées à la main.
+
+Pages d'ajout (une par ressource, [UX](ux.md)) : **Nouvelle catégorie** (`/categories/new`, `category_new_page.html`) : le nom, le sens, « Ajouter la catégorie » et « Annuler ». **Nouvelle règle** (`/categories/rules/new`, `rule_new_page.html`) : le motif, la catégorie, « Ajouter la règle » et « Annuler » ; sans catégorie, la page renvoie vers la création d'une catégorie. Chacune a un lien « ← Catégories » ; un refus la rouvre avec le message, un succès revient à la liste.
 
 Sur la page des opérations d'un compte, chaque ligne porte désormais, sous la date, le libellé et le montant, une liste de catégories (présélectionnée) et un bouton tonal « Classer ». Sans catégorie créée, la page renvoie vers la page Catégories.
 
@@ -130,7 +131,7 @@ Les pages **Connexion** et **Première configuration** n'ont pas de navigation (
 
 - **Connexion** : un champ « Mot de passe » (focus à l'ouverture) et « Se connecter ». Un refus s'affiche au-dessus du formulaire (`bg-error-container`, `role="alert"`) ; il ne dit jamais ce qui manque (« Mot de passe incorrect. »). Après trop d'essais, il dit combien d'attente.
 - **Première configuration** (seulement tant qu'aucun mot de passe n'existe) : le code de configuration affiché dans la console, le mot de passe et sa confirmation, avec l'exigence de longueur écrite. Une fois enregistré, l'utilisateur est connecté.
-- **Banques** (Réglages, `/banks`) : la liste des banques, chacune avec son nombre de comptes et son format CSV en une ligne, repliée dans un `details` « Modifier » (les réglages, « Enregistrer les réglages », « Supprimer la banque » avec confirmation htmx). Un encadré « Relevé PDF (facultatif) » règle la lecture des PDF. Dessous, « Nouvelle banque » : le nom et les mêmes réglages, préremplis avec le format le plus courant. Règles : [Banques et format CSV](../specs/banks.md).
+- **Banques** (Réglages, `/banks`) : la liste des banques, chacune avec son nombre de comptes et son format CSV en une ligne, repliée dans un `details` « Modifier » (les réglages, « Enregistrer les réglages », « Supprimer la banque » avec confirmation htmx). Un encadré « Relevé PDF (facultatif) » règle la lecture des PDF. Le titre porte un bouton plein « Nouvelle banque » vers `/banks/new` (`bank_new_page.html`) : le nom et les mêmes réglages, préremplis avec le format le plus courant, « Ajouter la banque » et « Annuler ». Règles : [Banques et format CSV](../specs/banks.md).
 - **Réglages** (`/settings`) : l'index des cinq pages de configuration, une liste de lignes à deux niveaux (titre et une phrase), séparées et terminées par un chevron comme la liste des Actifs, qui mènent à Paiements, Banques, Connexion bancaire, Catégories et Compte.
 - **Compte** (Réglages) : « Changer le mot de passe » (actuel, nouveau, confirmation) et « Se déconnecter ». Le changement ferme les autres sessions, et le dit.
 

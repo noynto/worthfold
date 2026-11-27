@@ -90,13 +90,13 @@ pub async fn get_forecast_page(State(app): AppState) -> Response {
                         != (m.balance.expected, m.balance.low, m.balance.high)
                 })
                 .map(|w| {
-                format!(
-                    "Patrimoine net : {} ({} – {})",
-                    money(w.expected),
-                    money(w.low),
-                    money(w.high)
-                )
-            }),
+                    format!(
+                        "Patrimoine net : {} ({} – {})",
+                        money(w.expected),
+                        money(w.low),
+                        money(w.high)
+                    )
+                }),
             expected_negative: m.balance.expected < Decimal::ZERO,
         })
         .collect();

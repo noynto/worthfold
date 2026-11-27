@@ -3,7 +3,10 @@
 {% block snackbar %}{% if let Some(flash) = flash %}<p class="snackbar">{{ flash }}</p>{% endif %}{% endblock %}
 {% block content %}
 
-<h1 class="px-2 text-headline-small">Banques</h1>
+<div class="flex flex-wrap items-center justify-between gap-3 px-2">
+  <h1 class="text-headline-small">Banques</h1>
+  <a href="/banks/new" class="btn-filled">Nouvelle banque</a>
+</div>
 
 {% if let Some(error) = error %}
 <p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ error }}</p>
@@ -42,18 +45,5 @@
     {% endfor %}
   </ul>
   {% endif %}
-</section>
-
-<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="new-title">
-  <h2 id="new-title" class="px-2 pb-1 text-title-medium">Nouvelle banque</h2>
-  <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Ouvre un export de ta banque dans un éditeur de texte : les noms des colonnes se recopient tels qu'ils sont écrits sur la ligne d'en-tête (la casse et les accents n'ont pas d'importance). Les lignes avant l'en-tête (nom du compte, période…) sont ignorées.</p>
-  <form class="flex flex-col gap-3" method="post" action="/banks">
-    <label class="field-label">Nom de la banque
-      <input class="field" name="name" required maxlength="100" placeholder="Ma banque" autocomplete="off">
-    </label>
-    {% let f = new_form %}
-    {% include "partials/csv_format.html" %}
-    <div><button class="btn-filled">Ajouter la banque</button></div>
-  </form>
 </section>
 {% endblock %}

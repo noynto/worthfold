@@ -29,7 +29,9 @@ Les pages sont rendues côté serveur avec askama ; **htmx** fait les mises à j
 | `GET` | `/settings` | — | Page Réglages : l'index des pages de configuration (destination du rail et de la barre de navigation) |
 | `GET` | `/account` | — | Page Compte : changer le mot de passe, se déconnecter |
 | `POST` | `/account/password` | `ChangePassword` | Changer le mot de passe : ferme toutes les autres sessions |
-| `GET` | `/categories` | `ReadCategories` | Page Catégories : catégories, règles, formulaires d'ajout |
+| `GET` | `/categories` | `ReadCategories` | Page Catégories : catégories, règles, boutons d'ajout |
+| `GET` | `/categories/new` | — | Page d'ajout d'une catégorie |
+| `GET` | `/categories/rules/new` | `ReadCategories` | Page d'ajout d'une règle (liste des catégories) |
 | `POST` | `/categories` | `AddCategory` | Ajouter une catégorie, sans htmx |
 | `POST` | `/categories/defaults` | `AddDefaultCategories` | Ajouter les catégories usuelles, sans htmx |
 | `POST` | `/categories/{id}/delete` | `DeleteCategory` | Supprimer une catégorie et ses règles |
@@ -38,6 +40,7 @@ Les pages sont rendues côté serveur avec askama ; **htmx** fait les mises à j
 | `POST` | `/categories/apply` | `ApplyCategoryRules` | Classer les opérations sans catégorie d'après les règles |
 | `GET` | `/bank` | `ReadBankConnections` | Page Banque : consentements, jours restants, comptes à rattacher, formulaire de connexion |
 | `GET` | `/banks` | `ReadInstitutions` | La page Banques : leur format CSV et leurs comptes |
+| `GET` | `/banks/new` | — | Page d'ajout d'une banque (réglages préremplis) |
 | `POST` | `/banks` | `AddInstitution` | Ajouter une banque avec son format CSV |
 | `POST` | `/banks/{name}/update` | `UpdateInstitution` | Remplacer le format CSV d'une banque (son nom ne change pas) |
 | `POST` | `/banks/{name}/delete` | `DeleteInstitution` | Supprimer une banque (refusé si des comptes s'y rattachent) |
@@ -97,7 +100,7 @@ Une valorisation ne recharge donc jamais la page : seuls le total, la liste et l
 
 ## Catégories
 
-Les formulaires de la page Catégories et le classement d'une opération sont des formulaires classiques, **sans htmx** : un succès redirige avec une confirmation en message flash, un refus rouvre la page avec `?error=`. Les deux suppressions (catégorie, règle) utilisent htmx pour demander une confirmation (`hx-confirm`) ; un refus s'affiche sous le titre de la page (`#error-categories`) et un succès redirige (`HX-Redirect`).
+Les formulaires des pages Catégories et d'ajout, et le classement d'une opération sont des formulaires classiques, **sans htmx** : un succès redirige avec une confirmation en message flash, un refus rouvre la page avec `?error=`. Les deux suppressions (catégorie, règle) utilisent htmx pour demander une confirmation (`hx-confirm`) ; un refus s'affiche sous le titre de la page (`#error-categories`) et un succès redirige (`HX-Redirect`).
 
 ## Paiements
 

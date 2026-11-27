@@ -44,7 +44,6 @@ struct RuleView {
 struct CategoriesPage {
     section: &'static str,
     categories: Vec<CategoryView>,
-    kinds: Vec<(&'static str, &'static str)>,
     error: Option<String>,
     flash: Option<String>,
 }
@@ -94,14 +93,61 @@ pub async fn get_categories_page(
     let page = render(CategoriesPage {
         section: "categories",
         categories,
+        error: params.error,
+        flash,
+    });
+    with_flash_consumed(page, had_flash)
+}
+
+// ── GET /categories/new, GET /categories/rules/new ───────────────────────────
+
+#[derive(Template)]
+#[template(path = "category_new_page.html")]
+struct CategoryNewPage {
+    section: &'static str,
+    kinds: Vec<(&'static str, &'static str)>,
+    error: Option<String>,
+}
+
+/// La page d'ajout d'une catégorie : rien à lire, donc aucun cas d'usage.
+pub async fn get_category_new_page(Query(params): Query<ErrorParams>) -> Response {
+    render(CategoryNewPage {
+        section: "categories",
         kinds: CategoryKind::ALL
             .iter()
             .map(|k| (k.code(), k.label()))
             .collect(),
         error: params.error,
-        flash,
-    });
-    with_flash_consumed(page, had_flash)
+    })
+}
+
+#[derive(Template)]
+#[template(path = "rule_new_page.html")]
+struct RuleNewPage {
+    section: &'static str,
+    /// Les catégories où ranger : identifiant et nom.
+    categories: Vec<(String, String)>,
+    error: Option<String>,
+}
+
+/// La page d'ajout d'une règle : sans catégorie, on repart de la liste (qui propose d'en créer).
+pub async fn get_rule_new_page(
+    State(app): AppState,
+    Query(params): Query<ErrorParams>,
+) -> Response {
+    let output = match app.read_categories.handle(read_categories::Query).await {
+        Ok(output) => output,
+        Err(e) => return technical_page(e),
+    };
+    render(RuleNewPage {
+        section: "categories",
+        categories: output
+            .categories
+            .iter()
+            .map(|c| (c.id.to_string(), c.name.clone()))
+            .collect(),
+        error: params.error,
+    })
 }
 
 // ── POST /categories ─────────────────────────────────────────────────────────
@@ -117,7 +163,8 @@ pub async fn post_category(
     headers: HeaderMap,
     Form(form): Form<CategoryForm>,
 ) -> Response {
-    let reply = Reply::new(&headers, PAGE);
+    // Un refus rouvre la page d'ajout ; un succès revient à la liste.
+    let reply = Reply::new(&headers, "/categories/new");
     let Some(kind) = CategoryKind::from_code(&form.kind) else {
         return reply.refusal("Le sens de la catégorie est invalide.");
     };
@@ -188,7 +235,7 @@ pub async fn post_rule(
     headers: HeaderMap,
     Form(form): Form<RuleForm>,
 ) -> Response {
-    let reply = Reply::new(&headers, PAGE);
+    let reply = Reply::new(&headers, "/categories/rules/new");
     match app
         .add_category_rule
         .handle(add_category_rule::Command {

@@ -3,7 +3,10 @@
 {% block snackbar %}{% if let Some(flash) = flash %}<p class="snackbar">{{ flash }}</p>{% endif %}{% endblock %}
 {% block content %}
 
-<h1 class="px-2 text-headline-small">Catégories</h1>
+<div class="flex flex-wrap items-center justify-between gap-3 px-2">
+  <h1 class="text-headline-small">Catégories</h1>
+  <a href="/categories/new" class="btn-filled">Nouvelle catégorie</a>
+</div>
 
 {# Refus d'un formulaire envoyé sans htmx, ou d'une suppression refusée (htmx : sous la liste). #}
 {% if let Some(error) = error %}
@@ -57,40 +60,17 @@
   </ul>
 </section>
 
-{# Action principale une fois les catégories créées : une règle, puis le classement des opérations. #}
+{# Une fois les catégories créées : une règle (page à part), puis le classement des opérations. #}
 <section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="rule-title">
-  <h2 id="rule-title" class="px-2 pb-1 text-title-medium">Nouvelle règle</h2>
+  <h2 id="rule-title" class="px-2 pb-1 text-title-medium">Règles de classement</h2>
   <p class="px-2 pb-4 text-body-medium text-on-surface-variant">Tout libellé qui contient le motif reçoit la catégorie, à l'import. Si plusieurs règles conviennent, la plus précise (le motif le plus long) l'emporte.</p>
-  <form class="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="/categories/rules">
-    <label class="field-label">Le libellé contient
-      <input class="field" name="pattern" placeholder="carrefour" required maxlength="100">
-    </label>
-    <label class="field-label">Catégorie
-      <select class="field" name="category_id">
-        {% for category in categories %}<option value="{{ category.id }}">{{ category.name }}</option>{% endfor %}
-      </select>
-    </label>
-    <button class="btn-filled">Ajouter la règle</button>
-  </form>
+  <div class="flex flex-wrap items-center gap-3 px-2">
+    <a href="/categories/rules/new" class="btn-tonal">Nouvelle règle</a>
+  </div>
   <form class="mt-4 flex flex-wrap items-center gap-3 px-2" method="post" action="/categories/apply">
     <button class="btn-tonal">Classer les opérations</button>
     <span class="text-body-medium text-on-surface-variant">Applique les règles aux opérations sans catégorie. Celles que tu as classées toi-même ne changent pas.</span>
   </form>
 </section>
 {% endif %}
-
-<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="new-title">
-  <h2 id="new-title" class="px-2 pb-4 text-title-medium">Nouvelle catégorie</h2>
-  <form class="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]" method="post" action="/categories">
-    <label class="field-label">Nom
-      <input class="field" name="name" required maxlength="60">
-    </label>
-    <label class="field-label">Sens
-      <select class="field" name="kind">
-        {% for kind in kinds %}<option value="{{ kind.0 }}">{{ kind.1 }}</option>{% endfor %}
-      </select>
-    </label>
-    <button class="btn-filled">Ajouter</button>
-  </form>
-</section>
 {% endblock %}

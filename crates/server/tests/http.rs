@@ -261,6 +261,9 @@ async fn les_pages_n_ont_ni_script_ni_style_en_ligne() {
         "/forecast",
         "/bank",
         "/categories",
+        "/categories/new",
+        "/categories/rules/new",
+        "/banks/new",
         "/settings",
         "/account",
         "/fragments/chart",
@@ -500,7 +503,7 @@ async fn refuse_une_categorie_sans_nom_ou_en_double() {
         .oneshot(post("/categories", "name=&kind=expense", false))
         .await
         .unwrap();
-    assert!(header_of(&response, "location").starts_with("/categories?error="));
+    assert!(header_of(&response, "location").starts_with("/categories/new?error="));
 
     app.clone()
         .oneshot(post("/categories", "name=Courses&kind=expense", false))
@@ -510,7 +513,7 @@ async fn refuse_une_categorie_sans_nom_ou_en_double() {
         .oneshot(post("/categories", "name=courses&kind=expense", false))
         .await
         .unwrap();
-    assert!(header_of(&response, "location").starts_with("/categories?error="));
+    assert!(header_of(&response, "location").starts_with("/categories/new?error="));
 }
 
 #[tokio::test]
@@ -2149,6 +2152,9 @@ async fn la_navigation_marque_la_page_courante_et_regroupe_les_reglages() {
         ("/payments/new", "Réglages"),
         ("/banks", "Réglages"),
         ("/categories", "Réglages"),
+        ("/categories/new", "Réglages"),
+        ("/categories/rules/new", "Réglages"),
+        ("/banks/new", "Réglages"),
         ("/account", "Réglages"),
     ] {
         let page = body(app.clone().oneshot(get(uri)).await.unwrap()).await;

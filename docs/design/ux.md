@@ -180,9 +180,9 @@ Pages regardées à 1100 et 390 px, connecté, sur l'application locale. Le mode
 
 ## Un formulaire de création par page (27 novembre 2026)
 
-Pour garder une charge cognitive faible, la création d'une ressource a sa propre page, ouverte par un bouton plein sur la liste : Actifs (`/assets/new`) et Paiements (`/payments/new`). La liste ne sert qu'à lire ; la page de création a un seul objectif, « Annuler » et le retour à la liste. Un refus rouvre la page de création avec le message ; un succès renvoie vers la liste (Paiements) ou vers la page du nouvel actif, où saisir sa première valeur.
+Pour garder une charge cognitive faible, la création d'une ressource a sa propre page, ouverte par un bouton plein sur la liste : Actifs (`/assets/new`), Paiements (`/payments/new`), Catégories (`/categories/new` et `/categories/rules/new`) et Banques (`/banks/new`). La liste ne sert qu'à lire ; la page de création a un seul objectif, « Annuler » et le retour à la liste. Un refus rouvre la page de création avec le message ; un succès renvoie vers la liste ou, pour un actif, vers sa page, où saisir sa première valeur.
 
-Restent à faire dans le même esprit : Catégories (catégorie et règle), Banques, Budget (enveloppe). On laisse en place les actions d'un geste (supprimer, ajouter une suggestion), les modifications d'un élément déjà ouvert et les réglages à un ou deux champs.
+On laisse en place les actions d'un geste (supprimer, ajouter une suggestion, classer les opérations), les modifications d'un élément déjà ouvert et les réglages à deux champs qui portent sur ce qu'on lit à côté : le plafond d'une enveloppe et le versement d'épargne, sur la page Budget, au mois qu'ils modifient.
 
 ### Limites
 

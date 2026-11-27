@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Nouvelle catégorie · worthfold{% endblock %}
+{% block content %}
+
+<div class="flex items-center gap-2">
+  <a href="/categories" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large text-primary">← Catégories</a>
+</div>
+
+<h1 class="px-2 text-headline-small">Nouvelle catégorie</h1>
+
+{% if let Some(error) = error %}
+<p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ error }}</p>
+{% endif %}
+
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="new-title">
+  <h2 id="new-title" class="sr-only">Les informations de la catégorie</h2>
+  <form class="grid items-end gap-3 md:grid-cols-2" method="post" action="/categories">
+    <label class="field-label">Nom
+      <input class="field" name="name" required maxlength="60">
+    </label>
+    <label class="field-label">Sens
+      <select class="field" name="kind">
+        {% for kind in kinds %}<option value="{{ kind.0 }}">{{ kind.1 }}</option>{% endfor %}
+      </select>
+    </label>
+    <div class="flex flex-wrap items-center gap-3 md:col-span-full"><button class="btn-filled">Ajouter la catégorie</button><a href="/categories" class="btn text-primary">Annuler</a></div>
+  </form>
+</section>
+{% endblock %}
