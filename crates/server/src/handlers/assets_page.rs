@@ -1,4 +1,4 @@
-//! La page Actifs (`/assets`), sa liste (fragment) et l'ajout d'un actif.
+//! La page Actifs (`/assets`), sa liste (fragment), et la page d'ajout d'un actif (`/assets/new`).
 
 use application::add_asset;
 use askama::Template;
@@ -28,10 +28,6 @@ struct AssetsPage {
     /// Confirmation d'une action qui a redirigé ici, affichée dans la snackbar (message flash).
     flash: Option<String>,
     lines: Vec<LineView>,
-    kinds: Vec<(&'static str, &'static str)>,
-    currencies: Vec<&'static str>,
-    /// Les banques que l'on peut donner à un compte bancaire.
-    bank_names: Vec<String>,
 }
 
 pub async fn get_assets_page(
@@ -51,11 +47,39 @@ pub async fn get_assets_page(
         error: params.error,
         flash,
         lines: line_views(output.lines, today),
+    });
+    with_flash_consumed(page, had_flash)
+}
+
+// ── GET /assets/new : ajouter un actif ───────────────────────────────────────
+
+#[derive(Template)]
+#[template(path = "asset_new_page.html")]
+struct AssetNewPage {
+    section: &'static str,
+    error: Option<String>,
+    kinds: Vec<(&'static str, &'static str)>,
+    currencies: Vec<&'static str>,
+    /// Les banques que l'on peut donner à un compte bancaire.
+    bank_names: Vec<String>,
+}
+
+pub async fn get_asset_new_page(
+    State(app): AppState,
+    Query(params): Query<ErrorParams>,
+) -> Response {
+    // Seules les banques servent ici : la lecture du patrimoine les fournit déjà.
+    let output = match app.read_net_worth.handle(net_worth_query(today())).await {
+        Ok(output) => output,
+        Err(e) => return technical_page(e),
+    };
+    render(AssetNewPage {
+        section: "assets",
+        error: params.error,
         kinds: kind_options(),
         currencies: currency_options(),
         bank_names: output.bank_names,
-    });
-    with_flash_consumed(page, had_flash)
+    })
 }
 
 #[derive(Template)]
@@ -94,7 +118,7 @@ pub async fn post_asset(
     headers: HeaderMap,
     Form(form): Form<AssetForm>,
 ) -> Response {
-    let reply = Reply::new(&headers, "/assets");
+    let reply = Reply::new(&headers, "/assets/new");
     let (Ok(kind), Ok(currency)) = (
         form.kind.parse::<AssetKind>(),
         form.currency.parse::<Currency>(),
@@ -109,10 +133,11 @@ pub async fn post_asset(
         account_number: form.account_number,
     };
     match app.add_asset.handle(command).await {
-        Ok(output) => reply.worth_changed(&format!(
-            "« {} » ajouté : saisis sa première valeur dans la liste.",
-            output.asset.name
-        )),
+        // Sur la page du nouvel actif, où l'on saisit sa première valeur.
+        Ok(output) => reply.redirect(
+            &format!("/assets/{}", output.asset.id),
+            &format!("« {} » ajouté : saisis sa première valeur.", output.asset.name),
+        ),
         Err(e) => reply.error(e),
     }
 }

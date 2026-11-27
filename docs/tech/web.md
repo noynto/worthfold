@@ -7,7 +7,8 @@ Les pages sont rendues côté serveur avec askama ; **htmx** fait les mises à j
 | Méthode | Chemin | Cas d'usage | Réponse |
 |---|---|---|---|
 | `GET` | `/` | `ReadNetWorth` | Tableau de bord : total, avoirs et dettes, actifs à mettre à jour (le graphique se charge à part) |
-| `GET` | `/assets` | `ReadNetWorth` | Page Actifs : liste (chaque ligne mène à la page de l'actif), formulaire d'ajout |
+| `GET` | `/assets` | `ReadNetWorth` | Page Actifs : liste (chaque ligne mène à la page de l'actif) et bouton d'ajout |
+| `GET` | `/assets/new` | `ReadNetWorth` | Page d'ajout d'un actif (formulaire ; seules les banques sont lues) |
 | `GET` | `/fragments/net-worth` | `ReadNetWorth` | Fragment : le patrimoine net (héros) |
 | `GET` | `/fragments/assets` | `ReadNetWorth` | Fragment : la liste des actifs |
 | `GET` | `/fragments/chart` | `ReadNetWorthHistory` | Fragment : le graphique, en SVG intégré |
@@ -47,7 +48,8 @@ Les pages sont rendues côté serveur avec askama ; **htmx** fait les mises à j
 | `POST` | `/bank/sync-all` | `SyncBankAccounts` (`full`) | Relire les 90 derniers jours, sans tenir compte de la dernière lecture |
 | `POST` | `/bank/{id}/delete` | `DeleteBankConnection` | Retirer un consentement (confirmation htmx) |
 | `GET` | `/forecast` | `ReadForecast` | Page Prévisions : solde et patrimoine projetés à 3, 6 et 12 mois, mois après mois, alertes |
-| `GET` | `/payments` | `ReadPlannedPayments` | Page Paiements : calendrier des échéances, suggestions détectées, paiements, formulaire d'ajout |
+| `GET` | `/payments` | `ReadPlannedPayments` | Page Paiements : calendrier des échéances, suggestions détectées, paiements, bouton d'ajout |
+| `GET` | `/payments/new` | `ReadPlannedPayments` | Page d'ajout d'un paiement (formulaire ; seuls les comptes et les catégories sont lus) |
 | `POST` | `/payments` | `AddPlannedPayment` | Ajouter un paiement, sans htmx |
 | `POST` | `/payments/suggestions` | `AcceptRecurrenceSuggestion` | Ajouter une suggestion détectée (rythme et montant recalculés côté serveur) |
 | `POST` | `/payments/{id}/delete` | `DeletePlannedPayment` | Supprimer un paiement (confirmation htmx) |
@@ -82,7 +84,8 @@ Chaque formulaire a `method="post"`, `action` et `hx-post` vers la même route, 
 
 | Résultat | Avec htmx | Sans JavaScript |
 |---|---|---|
-| Valorisation, suppression d'une valorisation ou ajout réussi | `200` + `HX-Trigger: worth-changed` : le message d'erreur est vidé, les fragments se rechargent, le formulaire d'ajout se réinitialise, et la confirmation s'affiche dans la snackbar (échange hors cible, `hx-swap-oob`, `partials/snackbar.html`) | `303` vers la page du formulaire, avec la confirmation en message flash |
+| Valorisation ou suppression d'une valorisation réussie | `200` + `HX-Trigger: worth-changed` : le message d'erreur est vidé, les fragments se rechargent, le formulaire se réinitialise, et la confirmation s'affiche dans la snackbar (échange hors cible, `hx-swap-oob`, `partials/snackbar.html`) | `303` vers la page du formulaire, avec la confirmation en message flash |
+| Ajout d'un actif réussi | `200` vide + `HX-Redirect` vers la page du nouvel actif, avec la confirmation en message flash | `303` vers la page du nouvel actif, avec la confirmation en message flash |
 | Modification réussie | `200` vide + `HX-Redirect` vers la page de l'actif, avec la confirmation en message flash | `303` vers la page de l'actif, avec la confirmation en message flash |
 | Suppression réussie | `200` vide + `HX-Redirect: /assets`, avec la confirmation en message flash | `303` vers `/assets`, avec la confirmation en message flash |
 | Refus métier ou saisie illisible | `422` avec le message (`partials/inline_error.html`), affiché sous le formulaire ; **la saisie reste en place** | `303` vers la page du formulaire avec `?error=…`, affiché en haut |

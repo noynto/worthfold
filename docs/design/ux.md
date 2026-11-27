@@ -178,6 +178,12 @@ Pages regardées à 1100 et 390 px, connecté, sur l'application locale. Le mode
 - [x] Prévisions : « Patrimoine net » n'est affiché que s'il diffère du solde.
 - [x] Banque non configurée : une phrase simple d'abord, les variables d'environnement dans « Comment l'activer » (repliable).
 
+## Un formulaire de création par page (27 novembre 2026)
+
+Pour garder une charge cognitive faible, la création d'une ressource a sa propre page, ouverte par un bouton plein sur la liste : Actifs (`/assets/new`) et Paiements (`/payments/new`). La liste ne sert qu'à lire ; la page de création a un seul objectif, « Annuler » et le retour à la liste. Un refus rouvre la page de création avec le message ; un succès renvoie vers la liste (Paiements) ou vers la page du nouvel actif, où saisir sa première valeur.
+
+Restent à faire dans le même esprit : Catégories (catégorie et règle), Banques, Budget (enveloppe). On laisse en place les actions d'un geste (supprimer, ajouter une suggestion), les modifications d'un élément déjà ouvert et les réglages à un ou deux champs.
+
 ### Limites
 
 L'évaluation vient du code, pas d'une observation. Les comptes de formulaires et de champs sont ceux des gabarits : l'affichage réel dépend du nombre de paiements, de catégories ou de comptes. À confronter à un parcours réel avant de classer les pistes.

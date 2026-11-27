@@ -3,7 +3,7 @@
 <section id="assets" class="rounded-xl bg-surface-container-low p-2 md:p-3" hx-get="/fragments/assets" hx-trigger="worth-changed from:body" hx-swap="outerHTML">
   <h2 class="sr-only">Liste des actifs</h2>
   {% if lines.is_empty() %}
-  <p class="px-4 py-6 text-body-medium text-on-surface-variant">Aucun actif pour l'instant : ajoute le premier ci-dessous.</p>
+  <p class="px-4 py-6 text-body-medium text-on-surface-variant">Aucun actif pour l'instant : ajoute le premier avec le bouton « Ajouter un actif ».</p>
   {% else %}
   <ul class="divide-y divide-outline-variant">
   {% for line in lines %}

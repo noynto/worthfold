@@ -26,7 +26,7 @@ mod valuations;
 mod views;
 
 pub use asset_page::{get_asset_fragment, get_asset_page, post_asset_delete, post_asset_update};
-pub use assets_page::{get_assets_fragment, get_assets_page, post_asset};
+pub use assets_page::{get_asset_new_page, get_assets_fragment, get_assets_page, post_asset};
 pub use auth::{
     get_account, get_login, get_setup, post_change_password, post_login, post_logout, post_setup,
 };
@@ -50,7 +50,7 @@ pub use institutions::{
     get_banks_page, post_institution, post_institution_delete, post_institution_update,
 };
 pub use payments::{
-    get_payments_page, post_occurrence, post_payment, post_payment_delete, post_payment_step,
+    get_payment_new_page, get_payments_page, post_occurrence, post_payment, post_payment_delete, post_payment_step,
     post_suggestion,
 };
 pub use transactions::{

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Nouvel actif · worthfold{% endblock %}
+{% block content %}
+
+<div class="flex items-center gap-2">
+  <a href="/assets" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large text-primary">← Actifs</a>
+</div>
+
+<h1 class="px-2 text-headline-small">Nouvel actif</h1>
+
+{# Erreur d'un formulaire envoyé sans JavaScript (avec htmx, elle s'affiche sous le formulaire). #}
+{% if let Some(error) = error %}
+<p role="alert" class="rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container">{{ error }}</p>
+{% endif %}
+
+<section class="rounded-xl bg-surface-container-low p-4 md:p-6" aria-labelledby="new-title">
+  <h2 id="new-title" class="sr-only">Les informations de l'actif</h2>
+  <form class="grid items-end gap-3 {% if currencies.len() > 1 %}md:grid-cols-[2fr_1.5fr_1fr]{% else %}md:grid-cols-[2fr_1.5fr]{% endif %}" method="post" action="/assets"
+        hx-post="/assets" hx-target="#error-add" hx-swap="innerHTML" hx-disabled-elt="find button">
+    <label class="field-label">Nom
+      <input class="field" name="name" placeholder="Livret A" required maxlength="100">
+    </label>
+    <label class="field-label">Type
+      <select class="field" name="kind">
+        {% for kind in kinds %}<option value="{{ kind.0 }}">{{ kind.1 }}</option>{% endfor %}
+      </select>
+    </label>
+    {# Une seule devise proposée (l'euro, pour l'instant) : pas de choix à montrer. #}
+    {% if currencies.len() > 1 %}
+    <label class="field-label">Devise
+      <select class="field" name="currency">
+        {% for currency in currencies %}<option>{{ currency }}</option>{% endfor %}
+      </select>
+    </label>
+    {% else %}
+    {% for currency in currencies %}<input type="hidden" name="currency" value="{{ currency }}">{% endfor %}
+    {% endif %}
+    {# Un compte bancaire seulement : ignorés pour les autres types. Facultatifs. #}
+    <div class="grid gap-3 md:col-span-full md:grid-cols-2 md:items-start">
+      <label class="field-label"><span>Banque</span>
+        <select class="field" name="bank_name">
+          <option value="">Aucune pour l'instant</option>
+          {% for bank in bank_names %}<option>{{ bank }}</option>{% endfor %}
+        </select>
+        <span class="text-body-small">Pour un compte bancaire : la banque dit comment lire ses relevés.</span>
+        {% if bank_names.is_empty() %}<span class="text-body-small text-on-surface-variant">Aucune banque : <a href="/banks" class="text-primary hover:underline">ajoute-en une</a> pour importer des relevés.</span>{% endif %}
+      </label>
+      <label class="field-label"><span>Numéro de compte ou IBAN (facultatif)</span>
+        <input class="field" name="account_number" placeholder="FR76 …" maxlength="60" autocomplete="off" spellcheck="false">
+      </label>
+    </div>
+    <div class="flex flex-wrap items-center gap-3 md:col-span-full"><button class="btn-filled">Ajouter l'actif</button><a href="/assets" class="btn text-primary">Annuler</a></div>
+  </form>
+  <p id="error-add" role="alert" class="mt-3 rounded-lg bg-error-container px-4 py-3 text-body-medium text-on-error-container empty:hidden"></p>
+</section>
+{% endblock %}

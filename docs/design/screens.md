@@ -26,16 +26,19 @@ De haut en bas, il tient sur un écran de téléphone :
    - Le nombre d'actifs et un bouton tonal « Gérer les actifs ».
    - **Avoirs** et **dettes**, deux montants (`title-large`) sur `surface-container`, coins `lg` ; les dettes en `error` quand il y en a.
    - **À mettre à jour** : les actifs dont la valeur a plus de 90 jours (« valeur du 10/06/2026 ») ou qui n'en ont jamais eu (« jamais valorisé »), en `tertiary`. Chaque ligne mène à la page de l'actif. Sans rien à signaler : « Toutes les valeurs ont moins de 90 jours ».
-   - Sans aucun actif : une phrase d'explication et un bouton plein « Ajouter un actif », vers le formulaire de la page Actifs (règle 9).
+   - Sans aucun actif : une phrase d'explication et un bouton plein « Ajouter un actif », vers la page d'ajout (règle 9).
 
 ## Actifs (`assets_page.html`)
 
-1. **Titre** « Actifs » (`headline-small`).
+1. **Titre** « Actifs » (`headline-small`) et, à droite, un bouton plein « Ajouter un actif » vers `/assets/new`.
 2. **Bandeau** d'erreur d'un formulaire envoyé sans JavaScript, en `error-container`, `role="alert"`.
 3. **Liste** (`partials/assets.html`) : une ligne par actif, séparée par `outline-variant`. **Chaque ligne entière est un lien** vers la page de l'actif (couche d'état au survol, chevron `›`) : la liste présente, elle ne sert pas à saisir.
    - Nom (`title-medium`) et type (`body-medium`, discret), suivi de la banque et du numéro masqué (`•••• 2606`) pour un compte bancaire renseigné. Un nom long passe à la ligne, il n'est jamais coupé.
    - Dernière valeur (`title-medium`, `error` si négative), sa date (`label-medium`) et, si besoin, « à mettre à jour » ou « jamais valorisé » en `tertiary` ([UX](ux.md), règle 8).
-4. **Carte « Ajouter un actif »** (`id="add"`) : nom, type et, quand plusieurs devises sont proposées, devise (`field` avec `field-label`) ; tant que seul l'euro est proposé, la devise n'est pas demandée. Sur une seconde ligne, la banque (liste des banques, voir la page Banques) et le numéro de compte ou l'IBAN (facultatifs, pour un compte bancaire ; l'IBAN est vérifié). Bouton plein « Ajouter ». Erreur sous le formulaire ; après un succès, le formulaire se vide et le nouvel actif apparaît dans la liste.
+
+### Ajouter un actif (`asset_new_page.html`, `/assets/new`)
+
+Un seul objectif par page ([UX](ux.md), règle de charge cognitive) : lien « ← Actifs », titre « Nouvel actif », puis le formulaire : nom, type et, quand plusieurs devises sont proposées, devise (`field` avec `field-label`) ; tant que seul l'euro est proposé, la devise n'est pas demandée. Sur une seconde ligne, la banque (liste des banques, voir la page Banques) et le numéro de compte ou l'IBAN (facultatifs, pour un compte bancaire ; l'IBAN est vérifié). Bouton plein « Ajouter l'actif » et lien « Annuler ». Erreur sous le formulaire (htmx) ou en haut de la page (sans JavaScript). Après un succès, on arrive sur la page du nouvel actif, où saisir sa première valeur.
 
 ## Retours communs
 
@@ -94,11 +97,14 @@ Un mois à la fois, dans l'adresse. De haut en bas :
 
 Page du menu Réglages. De haut en bas :
 
-1. **Titre**, puis un message d'erreur éventuel.
+1. **Titre** et, à droite, un bouton plein « Ajouter un paiement » vers `/payments/new`, puis un message d'erreur éventuel.
 2. **Repéré dans tes relevés** (seulement s'il y a des suggestions, et alors en premier : c'est le chemin le plus court) : le nom, le sens, le compte, le rythme, le montant et le nombre d'opérations qui l'ont fait repérer, avec un bouton tonal « Ajouter ».
 3. **Échéances** : le calendrier, une ligne par échéance (date, nom, état, montant), précédé d'une phrase qui dit ce qu'il montre. L'état est écrit : « Prévu », « Constaté : 700,00 € » (en `primary`), « Manquant : rien n'est arrivé » (en `error`), « Sautée » (barrée) ; un montant estimé s'affiche « ≈ 1 850,00 € ± 150,00 € ». Une échéance non constatée a une section repliée « Corriger cette échéance » : Sauter, Fixer un autre montant, Rétablir.
 4. **Mes paiements** : chaque paiement décrit en toutes lettres (« Tous les 3 mois, le 10, à partir de février 2026 », « Observé d'après tes relevés… », « révision estimée de 2 % chaque 15 octobre »), une section repliée « Nouveau montant » (palier : date, montant, marge) et un bouton texte « Supprimer » avec confirmation.
-5. **Ajouter un paiement** : un formulaire en blocs (*Quoi*, *Quand*, *Combien*), ouvert tant qu'il n'y a aucun paiement. Le chemin courant (un paiement mensuel d'un montant fixe) ne montre que les champs de base. Ce qui est rare est replié : « Précisions selon le rythme choisi » (tous les N mois, certains mois, une seule fois), « Montant variable ou révisé chaque année » et « Limiter dans le temps ». Les zones repliées sont dans le formulaire : elles sont envoyées même fermées, et la page n'a pas besoin de JavaScript. Règles : [Paiements prévus](../specs/payments.md).
+
+### Ajouter un paiement (`payment_new_page.html`, `/payments/new`)
+
+Lien « ← Paiements », titre « Nouveau paiement », puis un formulaire en blocs (*Quoi*, *Quand*, *Combien*). Le chemin courant (un paiement mensuel d'un montant fixe) ne montre que les champs de base. Ce qui est rare est replié : « Précisions selon le rythme choisi » (tous les N mois, certains mois, une seule fois), « Montant variable ou révisé chaque année » et « Limiter dans le temps ». Les zones repliées sont dans le formulaire : elles sont envoyées même fermées, et la page n'a pas besoin de JavaScript. Bouton plein « Ajouter le paiement » et lien « Annuler » ; après un succès, retour à la liste avec la confirmation. Règles : [Paiements prévus](../specs/payments.md).
 
 ## Prévisions (`forecast_page.html`)
 

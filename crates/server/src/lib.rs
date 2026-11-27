@@ -63,6 +63,7 @@ pub fn router_exposed(use_cases: Arc<UseCases>, exposure: Exposure) -> Router {
             "/assets",
             get(handlers::get_assets_page).post(handlers::post_asset),
         )
+        .route("/assets/new", get(handlers::get_asset_new_page))
         .route(
             "/assets/{id}",
             get(handlers::get_asset_page).post(handlers::post_asset_update),
@@ -80,6 +81,7 @@ pub fn router_exposed(use_cases: Arc<UseCases>, exposure: Exposure) -> Router {
             "/assets/{id}/transactions/{transaction_id}/category",
             post(handlers::post_transaction_category),
         )
+        .route("/payments/new", get(handlers::get_payment_new_page))
         .route(
             "/payments",
             get(handlers::get_payments_page).post(handlers::post_payment),

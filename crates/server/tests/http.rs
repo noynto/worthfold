@@ -109,6 +109,7 @@ async fn les_pages_principales_repondent() {
     for uri in [
         "/",
         "/assets",
+        "/assets/new",
         "/fragments/net-worth",
         "/fragments/assets",
         "/fragments/chart",
@@ -135,22 +136,18 @@ async fn sans_javascript_un_refus_revient_sur_la_page_avec_le_message() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    assert!(header_of(&response, "location").starts_with("/assets?error="));
+    assert!(header_of(&response, "location").starts_with("/assets/new?error="));
 }
 
 #[tokio::test]
-async fn avec_htmx_un_succes_previent_les_fragments_et_confirme() {
+async fn avec_htmx_un_succes_va_sur_la_page_de_l_actif_avec_une_confirmation() {
     let response = app()
         .oneshot(post("/assets", VALID_ASSET, true))
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
-    assert_eq!(header_of(&response, "HX-Trigger"), "worth-changed");
-    let html = body(response).await;
-    assert!(
-        html.contains("snackbar") && html.contains("Livret A"),
-        "{html}"
-    );
+    assert!(header_of(&response, "HX-Redirect").starts_with("/assets/"));
+    assert!(header_of(&response, "set-cookie").starts_with("worthfold_flash="));
 }
 
 #[tokio::test]
@@ -160,7 +157,7 @@ async fn sans_javascript_un_succes_redirige_avec_un_message_flash() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    assert_eq!(header_of(&response, "location"), "/assets");
+    assert!(header_of(&response, "location").starts_with("/assets/"));
     assert!(header_of(&response, "set-cookie").starts_with("worthfold_flash="));
 }
 
@@ -257,8 +254,10 @@ async fn les_pages_n_ont_ni_script_ni_style_en_ligne() {
     for uri in [
         "/",
         "/assets",
+        "/assets/new",
         "/budget",
         "/payments",
+        "/payments/new",
         "/forecast",
         "/bank",
         "/categories",
@@ -874,8 +873,9 @@ async fn add_payment(app: &Router, form: &str) -> Response<Body> {
 
 #[tokio::test]
 async fn la_page_paiements_demande_d_abord_un_compte_bancaire() {
-    let page = body(app().oneshot(get("/payments")).await.unwrap()).await;
-    assert!(page.contains("Aucune échéance"), "{page}");
+    let list = body(app().oneshot(get("/payments")).await.unwrap()).await;
+    assert!(list.contains("Aucune échéance"), "{list}");
+    let page = body(app().oneshot(get("/payments/new")).await.unwrap()).await;
     assert!(
         page.contains("il faut d'abord un compte bancaire")
             || page.contains("Il faut d'abord un compte bancaire"),
@@ -1874,7 +1874,7 @@ async fn un_compte_montre_son_numero_masque_en_liste_et_en_entier_sur_sa_page() 
         .unwrap();
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
-    let list = body(app.clone().oneshot(get("/assets")).await.unwrap()).await;
+    let list = body(app.clone().oneshot(get("/fragments/assets")).await.unwrap()).await;
     assert!(list.contains("Ma banque · •••• 2606"), "{list}");
     assert!(
         !list.contains("FR14 2004"),
@@ -1931,7 +1931,7 @@ async fn le_premier_mois_d_un_rythme_se_choisit_dans_une_liste_et_non_dans_un_ch
         .oneshot(post("/assets", BANK_ACCOUNT, false))
         .await
         .unwrap();
-    let page = body(app.oneshot(get("/payments")).await.unwrap()).await;
+    let page = body(app.oneshot(get("/payments/new")).await.unwrap()).await;
     // `<input type="month">` n'existe pas dans Firefox ni Safari de bureau : on y taperait du texte.
     assert!(!page.contains("type=\"month\""));
     let select = page
@@ -1971,7 +1971,7 @@ async fn ajouter_une_banque_la_liste_puis_la_proposer_aux_comptes() {
     assert!(page.contains("Crédit Agricole"), "{page}");
     assert!(page.contains("aucun compte"), "{page}");
     // La banque est proposée dans le formulaire d'ajout d'un actif.
-    let assets = body(app.oneshot(get("/assets")).await.unwrap()).await;
+    let assets = body(app.oneshot(get("/assets/new")).await.unwrap()).await;
     assert!(
         assets.contains("<option>Crédit Agricole</option>"),
         "{assets}"
@@ -2054,7 +2054,7 @@ async fn un_compte_sans_banque_ne_peut_pas_importer_et_la_page_le_dit() {
         ))
         .await
         .unwrap();
-    let list = body(app.clone().oneshot(get("/assets")).await.unwrap()).await;
+    let list = body(app.clone().oneshot(get("/fragments/assets")).await.unwrap()).await;
     let id = list
         .split("href=\"/assets/")
         .nth(1)
@@ -2146,6 +2146,7 @@ async fn la_navigation_marque_la_page_courante_et_regroupe_les_reglages() {
         ("/forecast", "Prévisions"),
         ("/settings", "Réglages"),
         ("/payments", "Réglages"),
+        ("/payments/new", "Réglages"),
         ("/banks", "Réglages"),
         ("/categories", "Réglages"),
         ("/account", "Réglages"),

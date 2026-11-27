@@ -198,17 +198,65 @@ struct PaymentsPage {
     calendar: Vec<CalendarRow>,
     payments: Vec<PaymentRow>,
     suggestions: Vec<SuggestionRow>,
-    /// Les comptes bancaires : identifiant et nom.
-    accounts: Vec<(String, String)>,
-    /// Les catégories : identifiant, nom, et son sens (pour guider le choix).
-    categories: Vec<(String, String)>,
-    months: Vec<(u32, &'static str)>,
-    /// Les mois proposés pour le premier mois d'un rythme « Tous les N mois » : identifiant (`2026-12`) et libellé.
-    first_months: Vec<(String, String)>,
-    days: Vec<u32>,
     today_iso: String,
     error: Option<String>,
     flash: Option<String>,
+}
+
+#[derive(Template)]
+#[template(path = "payment_new_page.html")]
+struct PaymentNewPage {
+    section: &'static str,
+    /// Les comptes bancaires : identifiant et nom.
+    accounts: Vec<(String, String)>,
+    /// Les catégories : identifiant et nom.
+    categories: Vec<(String, String)>,
+    months: Vec<(u32, &'static str)>,
+    first_months: Vec<(String, String)>,
+    days: Vec<u32>,
+    error: Option<String>,
+}
+
+/// GET /payments/new : la page d'ajout d'un paiement.
+pub async fn get_payment_new_page(
+    State(app): AppState,
+    Query(params): Query<ErrorParams>,
+) -> Response {
+    let today = today();
+    // Seuls les comptes et les catégories servent ici : la lecture des paiements les fournit déjà.
+    let output = match app
+        .read_planned_payments
+        .handle(read_planned_payments::Query {
+            today,
+            back_days: BACK_DAYS,
+            ahead_days: AHEAD_DAYS,
+        })
+        .await
+    {
+        Ok(output) => output,
+        Err(e) => return technical_page(e),
+    };
+    render(PaymentNewPage {
+        section: "payments",
+        accounts: output
+            .accounts
+            .iter()
+            .map(|a| (a.id.to_string(), a.name.clone()))
+            .collect(),
+        categories: output
+            .categories
+            .iter()
+            .map(|c| (c.id.to_string(), c.name.clone()))
+            .collect(),
+        months: MONTHS
+            .iter()
+            .enumerate()
+            .map(|(i, name)| (i as u32 + 1, *name))
+            .collect(),
+        first_months: first_month_options(today),
+        days: (1..=31).collect(),
+        error: params.error,
+    })
 }
 
 pub async fn get_payments_page(
@@ -321,23 +369,6 @@ pub async fn get_payments_page(
         calendar,
         payments,
         suggestions,
-        accounts: output
-            .accounts
-            .iter()
-            .map(|a| (a.id.to_string(), a.name.clone()))
-            .collect(),
-        categories: output
-            .categories
-            .iter()
-            .map(|c| (c.id.to_string(), c.name.clone()))
-            .collect(),
-        months: MONTHS
-            .iter()
-            .enumerate()
-            .map(|(i, name)| (i as u32 + 1, *name))
-            .collect(),
-        first_months: first_month_options(today),
-        days: (1..=31).collect(),
         today_iso: iso_date(today),
         error: params.error,
         flash,
@@ -534,7 +565,8 @@ pub async fn post_payment(
     headers: HeaderMap,
     Form(form): Form<PaymentForm>,
 ) -> Response {
-    let reply = Reply::new(&headers, PAGE);
+    // Un refus rouvre la page d'ajout ; un succès revient à la liste.
+    let reply = Reply::new(&headers, "/payments/new");
     let command = match parse_form(&form, today()) {
         Ok(command) => command,
         Err(message) => return reply.refusal(&message),
