@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Réglages · worthfold{% endblock %}
+{% block content %}
+
+<h1 class="px-2 text-headline-small">Réglages</h1>
+
+<nav aria-label="Réglages" class="rounded-xl bg-surface-container-low p-2 md:p-3">
+  <ul class="divide-y divide-outline-variant">
+  <li><a href="/payments" class="state-layer flex min-h-16 items-center gap-4 rounded-md px-4 py-4">
+    <span class="min-w-0 grow">
+      <span class="block text-body-large">Paiements</span>
+      <span class="block text-body-medium text-on-surface-variant">Loyers, abonnements et autres paiements prévus</span>
+    </span>
+    <span aria-hidden="true" class="text-title-large text-on-surface-variant">›</span>
+  </a></li>
+  <li><a href="/banks" class="state-layer flex min-h-16 items-center gap-4 rounded-md px-4 py-4">
+    <span class="min-w-0 grow">
+      <span class="block text-body-large">Banques</span>
+      <span class="block text-body-medium text-on-surface-variant">Le format des relevés CSV de chaque banque</span>
+    </span>
+    <span aria-hidden="true" class="text-title-large text-on-surface-variant">›</span>
+  </a></li>
+  <li><a href="/bank" class="state-layer flex min-h-16 items-center gap-4 rounded-md px-4 py-4">
+    <span class="min-w-0 grow">
+      <span class="block text-body-large">Connexion bancaire</span>
+      <span class="block text-body-medium text-on-surface-variant">Lire les opérations et le solde directement auprès de la banque</span>
+    </span>
+    <span aria-hidden="true" class="text-title-large text-on-surface-variant">›</span>
+  </a></li>
+  <li><a href="/categories" class="state-layer flex min-h-16 items-center gap-4 rounded-md px-4 py-4">
+    <span class="min-w-0 grow">
+      <span class="block text-body-large">Catégories</span>
+      <span class="block text-body-medium text-on-surface-variant">Les catégories et les règles qui classent les libellés</span>
+    </span>
+    <span aria-hidden="true" class="text-title-large text-on-surface-variant">›</span>
+  </a></li>
+  <li><a href="/account" class="state-layer flex min-h-16 items-center gap-4 rounded-md px-4 py-4">
+    <span class="min-w-0 grow">
+      <span class="block text-body-large">Compte</span>
+      <span class="block text-body-medium text-on-surface-variant">Mot de passe et déconnexion</span>
+    </span>
+    <span aria-hidden="true" class="text-title-large text-on-surface-variant">›</span>
+  </a></li>
+  </ul>
+</nav>
+{% endblock %}

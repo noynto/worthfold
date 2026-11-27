@@ -20,6 +20,7 @@ mod forecast;
 mod institutions;
 mod payments;
 mod reply;
+mod settings;
 mod transactions;
 mod valuations;
 mod views;
@@ -29,6 +30,7 @@ pub use assets_page::{get_assets_fragment, get_assets_page, post_asset};
 pub use auth::{
     get_account, get_login, get_setup, post_change_password, post_login, post_logout, post_setup,
 };
+pub use settings::get_settings;
 pub use bank::{
     get_bank_callback, get_bank_page, get_banks_fragment, post_bank_connect, post_bank_delete,
     post_bank_link, post_bank_sync, post_bank_sync_all,

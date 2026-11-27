@@ -25,6 +25,7 @@ Les pages sont rendues côté serveur avec askama ; **htmx** fait les mises à j
 | `GET` | `/setup` | — | Première configuration : code affiché dans la console, mot de passe, confirmation |
 | `POST` | `/setup` | `SetupPassword` | Enregistrer le premier mot de passe et ouvrir la session |
 | `POST` | `/logout` | `Logout` | Fermer la session (côté serveur aussi) et revenir à `/login` |
+| `GET` | `/settings` | — | Page Réglages : l'index des pages de configuration (destination du rail et de la barre de navigation) |
 | `GET` | `/account` | — | Page Compte : changer le mot de passe, se déconnecter |
 | `POST` | `/account/password` | `ChangePassword` | Changer le mot de passe : ferme toutes les autres sessions |
 | `GET` | `/categories` | `ReadCategories` | Page Catégories : catégories, règles, formulaires d'ajout |

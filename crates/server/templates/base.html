@@ -12,33 +12,15 @@
   <script src="/static/app.js" defer></script>
 </head>
 <body class="min-h-dvh bg-surface font-sans text-body-large text-on-surface antialiased">
-  <main class="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 md:py-10">
-    {% block header %}
-    {# Navigation M3 : quatre destinations et un menu Réglages, la page active porte l'indicateur `secondary-container`. #}
-    <header class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-2">
-      <a href="/" class="text-title-large font-semibold tracking-tight text-primary">worthfold</a>
-      <nav aria-label="Navigation principale" class="flex flex-wrap gap-1">
-        <a href="/" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large {% if section == "dashboard" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}"{% if section == "dashboard" %} aria-current="page"{% endif %}>Tableau de bord</a>
-        <a href="/assets" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large {% if section == "assets" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}"{% if section == "assets" %} aria-current="page"{% endif %}>Actifs</a>
-        <a href="/budget" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large {% if section == "budget" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}"{% if section == "budget" %} aria-current="page"{% endif %}>Budget</a>
-        <a href="/forecast" class="state-layer inline-flex min-h-12 items-center rounded-full px-4 text-label-large {% if section == "forecast" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}"{% if section == "forecast" %} aria-current="page"{% endif %}>Prévisions</a>
-        {# Réglages : ce qu'on configure de temps en temps, replié pour garder quatre destinations visibles. Un `details` marche sans JavaScript. #}
-        <details class="relative">
-          <summary class="state-layer inline-flex min-h-12 cursor-pointer list-none items-center rounded-full px-4 text-label-large {% if section == "payments" || section == "banks" || section == "bank" || section == "categories" || section == "account" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface-variant{% endif %}">Réglages</summary>
-          <div class="absolute right-0 z-10 mt-1 min-w-48 rounded-md bg-surface-container py-2 shadow-md">
-          <a href="/payments" class="state-layer flex min-h-12 items-center px-4 text-label-large {% if section == "payments" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface{% endif %}"{% if section == "payments" %} aria-current="page"{% endif %}>Paiements</a>
-          <a href="/banks" class="state-layer flex min-h-12 items-center px-4 text-label-large {% if section == "banks" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface{% endif %}"{% if section == "banks" %} aria-current="page"{% endif %}>Banques</a>
-          <a href="/bank" class="state-layer flex min-h-12 items-center px-4 text-label-large {% if section == "bank" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface{% endif %}"{% if section == "bank" %} aria-current="page"{% endif %}>Connexion bancaire</a>
-          <a href="/categories" class="state-layer flex min-h-12 items-center px-4 text-label-large {% if section == "categories" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface{% endif %}"{% if section == "categories" %} aria-current="page"{% endif %}>Catégories</a>
-          <a href="/account" class="state-layer flex min-h-12 items-center px-4 text-label-large {% if section == "account" %}bg-secondary-container text-on-secondary-container{% else %}text-on-surface{% endif %}"{% if section == "account" %} aria-current="page"{% endif %}>Compte</a>
-          </div>
-        </details>
-      </nav>
-    </header>
-    {% endblock %}
+  {# La navigation est hors de `main` : un repère à part pour les lecteurs d'écran, avec un lien pour passer au contenu. #}
+  {% block header %}
+  <a href="#contenu" class="sr-only z-30 rounded-full bg-primary px-4 py-3 text-label-large text-on-primary focus:not-sr-only focus:fixed focus:left-2 focus:top-2">Aller au contenu</a>
+  {% include "partials/navigation.html" %}
+  {% endblock %}
+  <main id="contenu" class="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 md:py-10 {% block main_offset %}pb-28 md:pb-10 md:pl-28{% endblock %}">
     {% block content %}{% endblock %}
   </main>
   {# Snackbar M3 : confirmations des actions, en bas de l'écran (voir docs/design/ux.md, règle 2). #}
-  <div id="snackbar-region" role="status" aria-live="polite" class="pointer-events-none fixed inset-x-0 bottom-4 z-10 flex justify-center px-4">{% block snackbar %}{% endblock %}</div>
+  <div id="snackbar-region" role="status" aria-live="polite" class="pointer-events-none fixed inset-x-0 bottom-24 z-20 md:bottom-4 flex justify-center px-4">{% block snackbar %}{% endblock %}</div>
 </body>
 </html>

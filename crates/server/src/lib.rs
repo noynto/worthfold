@@ -41,6 +41,7 @@ pub fn router_exposed(use_cases: Arc<UseCases>, exposure: Exposure) -> Router {
             get(handlers::get_setup).post(handlers::post_setup),
         )
         .route("/logout", post(handlers::post_logout))
+        .route("/settings", get(handlers::get_settings))
         .route("/account", get(handlers::get_account))
         .route("/account/password", post(handlers::post_change_password))
         .route("/static/app.css", get(assets::app_css))

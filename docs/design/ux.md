@@ -156,7 +156,7 @@ Estimée par lecture des templates (nombre de zones, de champs, de boutons, de n
 
 ### Pistes
 
-- [x] **Navigation** : sept destinations ramenées à quatre, plus un menu **Réglages** (Paiements, Banque, Catégories), repliable sans JavaScript.
+- [x] **Navigation** : sept destinations ramenées à quatre, plus **Réglages** (Paiements, Banques, Connexion bancaire, Catégories, Compte), une page d'index. La navigation est adaptative : barre en bas sous 768 px, rail à gauche au-delà, avec des icônes et sans JavaScript.
 - [x] **Paiements** : suggestions à accepter en premier, puis le calendrier et les paiements, chacun précédé d'une phrase qui dit ce qu'il montre ; dans le formulaire d'ajout, les champs propres à un rythme, le montant variable ou révisé et la limite dans le temps sont repliés (le chemin courant tient en sept champs). Paliers et exceptions restaient déjà repliés.
 - [x] **Prévisions** : une courbe du scénario attendu avec la fourchette prudent–favorable (`chart::render_forecast`), le détail mois par mois derrière une zone repliable (règle 7).
 - [x] **Prévisions** : « Sur quoi ça repose » remonté sous la courbe (règle 11).

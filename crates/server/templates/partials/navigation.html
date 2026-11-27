@@ -1,0 +1,25 @@
+{# Navigation M3 adaptative : barre de navigation en bas sous 768 px, rail de navigation à gauche au-delà.
+   Le même `nav` sert aux deux ; la page active porte l'indicateur `secondary-container` et `aria-current="page"`.
+   Les icônes sont des SVG en ligne (Material Symbols), décoratives : le libellé reste visible. #}
+<nav aria-label="Navigation principale" class="fixed inset-x-0 bottom-0 z-10 flex h-20 items-start gap-1 bg-surface-container px-2 pt-3 md:inset-y-0 md:right-auto md:h-auto md:w-24 md:flex-col md:items-stretch md:gap-3 md:px-0 md:pt-6">
+  <a href="/" class="group flex flex-1 flex-col items-center gap-1 text-label-medium md:flex-none {% if section == "dashboard" %}font-semibold text-on-surface{% else %}text-on-surface-variant{% endif %}"{% if section == "dashboard" %} aria-current="page"{% endif %}>
+    <span class="state-layer flex h-8 w-16 items-center justify-center rounded-full {% if section == "dashboard" %}bg-secondary-container text-on-secondary-container{% endif %}"><svg class="size-6 fill-current" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg></span>
+    <span class="text-center">Accueil</span>
+  </a>
+  <a href="/assets" class="group flex flex-1 flex-col items-center gap-1 text-label-medium md:flex-none {% if section == "assets" %}font-semibold text-on-surface{% else %}text-on-surface-variant{% endif %}"{% if section == "assets" %} aria-current="page"{% endif %}>
+    <span class="state-layer flex h-8 w-16 items-center justify-center rounded-full {% if section == "assets" %}bg-secondary-container text-on-secondary-container{% endif %}"><svg class="size-6 fill-current" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z"/></svg></span>
+    <span class="text-center">Actifs</span>
+  </a>
+  <a href="/budget" class="group flex flex-1 flex-col items-center gap-1 text-label-medium md:flex-none {% if section == "budget" %}font-semibold text-on-surface{% else %}text-on-surface-variant{% endif %}"{% if section == "budget" %} aria-current="page"{% endif %}>
+    <span class="state-layer flex h-8 w-16 items-center justify-center rounded-full {% if section == "budget" %}bg-secondary-container text-on-secondary-container{% endif %}"><svg class="size-6 fill-current" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 2v20c-5.07-.5-9-4.79-9-10s3.93-9.5 9-10zm2.03 0v8.99H22c-.47-4.74-4.24-8.52-8.97-8.99zm0 11.01V22c4.74-.47 8.5-4.25 8.97-8.99h-8.97z"/></svg></span>
+    <span class="text-center">Budget</span>
+  </a>
+  <a href="/forecast" class="group flex flex-1 flex-col items-center gap-1 text-label-medium md:flex-none {% if section == "forecast" %}font-semibold text-on-surface{% else %}text-on-surface-variant{% endif %}"{% if section == "forecast" %} aria-current="page"{% endif %}>
+    <span class="state-layer flex h-8 w-16 items-center justify-center rounded-full {% if section == "forecast" %}bg-secondary-container text-on-secondary-container{% endif %}"><svg class="size-6 fill-current" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg></span>
+    <span class="text-center">Prévisions</span>
+  </a>
+  <a href="/settings" class="group flex flex-1 flex-col items-center gap-1 text-label-medium md:flex-none {% if section == "settings" || section == "payments" || section == "banks" || section == "bank" || section == "categories" || section == "account" %}font-semibold text-on-surface{% else %}text-on-surface-variant{% endif %}"{% if section == "settings" || section == "payments" || section == "banks" || section == "bank" || section == "categories" || section == "account" %} aria-current="page"{% endif %}>
+    <span class="state-layer flex h-8 w-16 items-center justify-center rounded-full {% if section == "settings" || section == "payments" || section == "banks" || section == "bank" || section == "categories" || section == "account" %}bg-secondary-container text-on-secondary-container{% endif %}"><svg class="size-6 fill-current" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></span>
+    <span class="text-center">Réglages</span>
+  </a>
+</nav>

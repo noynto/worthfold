@@ -6,7 +6,7 @@ Application des [fondations](foundations.md) aux écrans de worthfold. Templates
 
 - Fond `surface`, police Roboto Flex, texte `body-large`.
 - Une colonne centrée (`max-w-3xl`), cartes empilées avec `gap-4`.
-- En-tête : le nom « worthfold » (`title-large`, `primary`, lien vers le tableau de bord) et la **navigation** : quatre destinations en pilules (« Tableau de bord », « Actifs », « Budget », « Prévisions ») et un menu « Réglages » (« Paiements », « Banques », « Connexion bancaire », « Catégories », « Compte »), de 48 px de haut. Le menu est un `details` : il marche sans JavaScript, et sa pilule est active quand la page courante en fait partie. La page active porte l'indicateur `secondary-container` et `aria-current="page"` ; la page d'un actif active « Actifs ».
+- **Navigation** : cinq destinations, « Accueil » (le tableau de bord), « Actifs », « Budget », « Prévisions » et « Réglages ». Un seul `nav` s'adapte à la largeur (navigation adaptative M3) : sous 768 px, une **barre de navigation** fixée en bas (80 px) ; à partir de 768 px, un **rail de navigation** fixé à gauche (96 px de large). Chaque destination est une icône (SVG en ligne, décorative) dans une pilule de 64 × 32 px, avec son libellé dessous (`label-medium`, en gras pour la page active). La page active porte l'indicateur `secondary-container` et `aria-current="page"` ; la page d'un actif active « Actifs », et chaque page de configuration (Paiements, Banques, Connexion bancaire, Catégories, Compte) active « Réglages ». Sans JavaScript. Le contenu laisse la place du rail (marge gauche) ou de la barre (marge basse), et la snackbar passe au-dessus de la barre.
 
 ## Consulter, parcourir, agir
 
@@ -124,8 +124,9 @@ Les pages **Connexion** et **Première configuration** n'ont pas de navigation (
 
 - **Connexion** : un champ « Mot de passe » (focus à l'ouverture) et « Se connecter ». Un refus s'affiche au-dessus du formulaire (`bg-error-container`, `role="alert"`) ; il ne dit jamais ce qui manque (« Mot de passe incorrect. »). Après trop d'essais, il dit combien d'attente.
 - **Première configuration** (seulement tant qu'aucun mot de passe n'existe) : le code de configuration affiché dans la console, le mot de passe et sa confirmation, avec l'exigence de longueur écrite. Une fois enregistré, l'utilisateur est connecté.
-- **Banques** (menu Réglages, `/banks`) : la liste des banques, chacune avec son nombre de comptes et son format CSV en une ligne, repliée dans un `details` « Modifier » (les réglages, « Enregistrer les réglages », « Supprimer la banque » avec confirmation htmx). Un encadré « Relevé PDF (facultatif) » règle la lecture des PDF. Dessous, « Nouvelle banque » : le nom et les mêmes réglages, préremplis avec le format le plus courant. Règles : [Banques et format CSV](../specs/banks.md).
-- **Compte** (menu Réglages) : « Changer le mot de passe » (actuel, nouveau, confirmation) et « Se déconnecter ». Le changement ferme les autres sessions, et le dit.
+- **Banques** (Réglages, `/banks`) : la liste des banques, chacune avec son nombre de comptes et son format CSV en une ligne, repliée dans un `details` « Modifier » (les réglages, « Enregistrer les réglages », « Supprimer la banque » avec confirmation htmx). Un encadré « Relevé PDF (facultatif) » règle la lecture des PDF. Dessous, « Nouvelle banque » : le nom et les mêmes réglages, préremplis avec le format le plus courant. Règles : [Banques et format CSV](../specs/banks.md).
+- **Réglages** (`/settings`) : l'index des cinq pages de configuration, une liste de lignes à deux niveaux (titre et une phrase), séparées et terminées par un chevron comme la liste des Actifs, qui mènent à Paiements, Banques, Connexion bancaire, Catégories et Compte.
+- **Compte** (Réglages) : « Changer le mot de passe » (actuel, nouveau, confirmation) et « Se déconnecter ». Le changement ferme les autres sessions, et le dit.
 
 Tous ces formulaires sont des envois classiques (sans htmx) : une redirection, et la confirmation éventuelle dans la snackbar.
 

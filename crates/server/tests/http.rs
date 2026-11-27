@@ -262,6 +262,7 @@ async fn les_pages_n_ont_ni_script_ni_style_en_ligne() {
         "/forecast",
         "/bank",
         "/categories",
+        "/settings",
         "/account",
         "/fragments/chart",
     ] {
@@ -2133,4 +2134,26 @@ async fn une_banque_peut_gerer_les_releves_pdf_et_un_pdf_sans_format_est_refuse(
         .await
         .unwrap();
     assert_eq!(incomplete.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[tokio::test]
+async fn la_navigation_marque_la_page_courante_et_regroupe_les_reglages() {
+    let app = app();
+    for (uri, label) in [
+        ("/", "Accueil"),
+        ("/assets", "Actifs"),
+        ("/budget", "Budget"),
+        ("/forecast", "Prévisions"),
+        ("/settings", "Réglages"),
+        ("/payments", "Réglages"),
+        ("/banks", "Réglages"),
+        ("/categories", "Réglages"),
+        ("/account", "Réglages"),
+    ] {
+        let page = body(app.clone().oneshot(get(uri)).await.unwrap()).await;
+        assert_eq!(page.matches("aria-current=\"page\"").count(), 1, "{uri}");
+        let current = page.split("aria-current=\"page\"").nth(1).unwrap();
+        let current = &current[..current.find("</a>").unwrap()];
+        assert!(current.contains(label), "{uri} devrait activer {label}");
+    }
 }
